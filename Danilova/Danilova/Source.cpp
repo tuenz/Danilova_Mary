@@ -3,8 +3,8 @@ using namespace std;
 
 int main()
 {
-	char simv;
-	cout << "Hello, world\n";
-	cin >> simv;
+	int x;
+	cout << "Hello, world" << endl;
+	cin >> x;
 	return 0;
 }
