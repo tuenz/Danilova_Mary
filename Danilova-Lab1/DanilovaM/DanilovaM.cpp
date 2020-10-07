@@ -1,13 +1,33 @@
 ﻿#include <iostream>
 #include <fstream>
+#include <string>
 using namespace std;
 
+void Menu() {
+	cout << "Select:\n"
+		<< "1. Add pipeline information\n"
+		<< "2. Add ks information\n"
+		<< "3. View all objects\n"
+		<< "4. Change pipeline information\n"
+		<< "5. Change ks information\n"
+		<< "6. Save all information to file\n"
+		<< "7. Load all information from file\n"
+		<< "0. Exit";
+}
 struct Pipeline
 {
 	int id;
 	int diameter;
-	int length;
-    int repear;
+	double length;
+    bool repear;
+};
+struct ks
+{
+	int id;
+	string name;
+	int ceh;
+	int cehwork;
+	double effective;
 };
 
 Pipeline InputPipeline()
@@ -52,12 +72,22 @@ void SavePipeline(const Pipeline& p)
 }
 int main()
 {
-	Pipeline pipe = InputPipeline();
-	PrintPipeline(pipe);
-	EditPipeline(pipe);
-	PrintPipeline(pipe);
-	SavePipeline(pipe);
-	return 0;
+	int i;
+	while (1) {
+		Menu();
+		cin >> i;
+		switch (i)
+		{
+		case 0:
+			return 0;
+			break;
+		default:
+			cout << "Please, choose one of the folllowing actions. " << endl;
+			break;
+		}
+
+	}
+
 }
 
 
