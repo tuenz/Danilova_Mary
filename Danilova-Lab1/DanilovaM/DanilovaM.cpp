@@ -12,7 +12,7 @@ void Menu() {
 		<< "5. Change ks information\n"
 		<< "6. Save all information to file\n"
 		<< "7. Load all information from file\n"
-		<< "0. Exit";
+		<< "0. Exit\n";
 }
 struct Pipeline
 {
@@ -78,11 +78,25 @@ int main()
 		cin >> i;
 		switch (i)
 		{
+		case 1: 
+			break;
+		case 2:
+			break;
+		case 3: 
+			break;
+		case 4:
+			break;
+		case 5: 
+			break;
+		case 6: 
+			break;
+		case 7: 
+			break;
 		case 0:
 			return 0;
 			break;
 		default:
-			cout << "Please, choose one of the folllowing actions. " << endl;
+			cout << "\nPlease, choose one of the folllowing actions. " << endl;
 			break;
 		}
 
