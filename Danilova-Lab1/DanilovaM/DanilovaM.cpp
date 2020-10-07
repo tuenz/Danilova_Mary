@@ -72,8 +72,8 @@ void SavePipeline(const Pipeline& p)
 }
 int main()
 {
-	int i;
 	while (1) {
+		int i;
 		Menu();
 		cin >> i;
 		switch (i)
