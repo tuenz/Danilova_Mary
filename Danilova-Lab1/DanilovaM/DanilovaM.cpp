@@ -3,25 +3,28 @@
 #include <string>
 using namespace std;
 
-void Menu() {
-	cout << "Select:\n"
-		<< "1. Add pipeline information\n"
-		<< "2. Add ks information\n"
-		<< "3. View all objects\n"
-		<< "4. Change pipeline information\n"
-		<< "5. Change ks information\n"
-		<< "6. Save all information to file\n"
-		<< "7. Load all information from file\n"
+void PrintMenu() {
+	cout << "\nSelect, please:\n"
+		<< "1. Add pipeline information.\n"
+		<< "2. Add ks information.\n"
+		<< "3. Load pipeline information from file.\n"
+		<< "4. Load ks information from file.\n"
+		<< "5. View pipeline information.\n"
+		<< "6. View ks information.\n"
+		<< "7. Save pipeline information to file.\n"
+		<< "8. Save ks information to file.\n"
+		<< "9. Change attribute 'repair' for a pipeline.\n"
+		<< "10. Launch or stop ks department (l/s).\n"
 		<< "0. Exit\n";
 }
 struct Pipeline
 {
 	int id;
-	int diameter;
 	double length;
+	int diameter;
     bool repear;
 };
-struct ks
+struct Ks
 {
 	int id;
 	string name;
@@ -29,74 +32,149 @@ struct ks
 	int cehwork;
 	double effective;
 };
-
+bool RightNumber(int num)
+{
+	return (num > 0) ? true : false;
+}
 Pipeline InputPipeline()
 {
 	Pipeline p;
-	cout << "Input id:";
-	cin >> p.id;
-	cout << "Input diameter:";
-	cin >> p.diameter;
+	p.id = 1;
+	do {
+		cout << "Input diameter:";
+		cin >> p.diameter;
+	} while (!RightNumber(p.diameter));
 	cout << "Input length:";
 	cin >> p.length;
-	cout << "Repear (1/0):";
-	cin >> p.repear;
+	p.repear = false;
 	return p;
+}
+Ks InputKs()
+{
+	Ks k;
+	k.id = 1;
+	cout << "Input name:";
+	cin >> k.name;
+	cout << "Input a number of ceh:";
+	cin >> k.ceh;
+	cout << "Input a number of ceh in work:";
+	cin >> k.cehwork;
+	cout << "Input efficiency:";
+	cin >> k.effective;
+	return k;
 }
 void PrintPipeline(const Pipeline& p)
 {
-	cout << "\nId: " << p.id << "\tDiameter: " << p.diameter << "\tLength: " << p.length << "\tRepear: " << p.repear<< endl;
+	cout << "\nId: " << p.id 
+		 << "\tDiameter: " << p.diameter 
+		 << "\tLength: " << p.length 
+		 << "\tRepear: " << (p.repear ? "In repear" : "Not in repear") << endl;
+}
+void PrintKs(const Ks& k)
+{
+	cout << "\nId: " << k.id
+		 << "\tName: " << k.name
+		 << "\tNumber of ceh: " << k.ceh
+		 << "\tNumber of ceh in work: " << k.cehwork
+	     << "\tEfficiency: " << k.effective;
 }
 void EditPipeline(Pipeline& p)
 {
-	p.diameter -= 1;
+	p.repear = !p.repear;
+}
+void EditKs(Ks& k, char department)
+{
+	if (department == (char)"l")
+	{
+		k.cehwork++;
+	}
+	else
+	{
+		k.cehwork--;
+	}
 }
 Pipeline LoadPipeline()
 {
-	ifstream fin;
-		fin.open("data.txt", ios::in);
 	Pipeline p;
-	fin >> p.id;
-	fin >> p.diameter;
-	fin >> p.length;
-	fin >> p.repear;
-	fin.close();
+	ifstream fin;
+	fin.open("InputPipeline.txt", ios::in);
+	if (fin.is_open())
+	{
+		fin >> p.id >> p.diameter >> p.length >> p.repear;
+		fin.close();
+	}
 	return p;
+}
+Ks LoadKs()
+{
+	Ks k;
+	ifstream fin;
+	fin.open("InputKs.txt", ios::in);
+	if (fin.is_open())
+	{
+		fin >> k.id >> k.name >> k.ceh >> k.cehwork >> k.effective;
+		fin.close();
+	}
+	return k;
 }
 void SavePipeline(const Pipeline& p)
 {
 	ofstream fout;
-	fout.open("data.txt",ios:: out);
-	fout <<p.id<< endl<<p.diameter << endl << p.length <<endl<< p.repear<<endl;
-	fout.close();
+	fout.open("OutputPipeline.txt", ios::out);
+	if (fout.is_open())
+	{
+		fout << p.id << endl << p.diameter << endl << p.length << endl << p.repear << endl;
+		fout.close();
+	}
+}
+void SaveKS(const Ks& k)
+{
+	ofstream fout;
+	fout.open("OutputKs.txt", ios::out);
+	if (fout.is_open())
+	{
+		fout << k.id << endl << k.name << endl << k.ceh << endl << k.cehwork << k.effective;
+		fout.close();
+	}
 }
 int main()
 {
-	while (1) {
+	Pipeline p;
+	Ks k; 
+	for ( ; ; ) {
 		int i;
-		Menu();
+		PrintMenu();
 		cin >> i;
 		switch (i)
 		{
-		case 1: 
+		case 1: p = InputPipeline();
 			break;
-		case 2:
+		case 2: k = InputKs();
 			break;
-		case 3: 
+		case 3: SavePipeline(p);
 			break;
-		case 4:
+		case 4: SaveKS(k);
 			break;
-		case 5: 
+		case 5: PrintPipeline(p);
 			break;
-		case 6: 
+		case 6: PrintKs(k);
 			break;
-		case 7: 
+		case 7: p = LoadPipeline();
+			break;
+		case 8: k = LoadKs();
+			break;
+		case 9: EditPipeline(p);
+			break;
+		case 10: cout << "Please, input l or s: ";
+			char department;
+			cin >> department;
+			EditKs(k, department);
 			break;
 		case 0:
 			return 0;
 			break;
 		default:
-			cout << "\nPlease, choose one of the folllowing actions. " << endl;
+			cout << "\nPlease, choose one of the following actions. " << endl;
 			break;
 		}
 
