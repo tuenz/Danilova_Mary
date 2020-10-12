@@ -1,11 +1,11 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <string>
+#include <limits>
 using namespace std;
 
 void PrintMenu() {
-	cout << "\nSelect, please:\n"
-		<< "1. Add pipeline information.\n"
+	cout << "\n1. Add pipeline information.\n"
 		<< "2. Add ks information.\n"
 		<< "3. Load pipeline information from file.\n"
 		<< "4. Load ks information from file.\n"
@@ -14,8 +14,8 @@ void PrintMenu() {
 		<< "7. Save pipeline information to file.\n"
 		<< "8. Save ks information to file.\n"
 		<< "9. Change attribute 'repair' for a pipeline.\n"
-		<< "10. Launch or stop ks department (l/s).\n"
-		<< "0. Exit\n";
+		<< "10. Launch or stop ks ceh (1/0).\n"
+		<< "0. Exit.\n";
 }
 struct Pipeline
 {
@@ -32,16 +32,29 @@ struct Ks
 	int cehwork;
 	double effective;
 };
+void StreamInit()
+{
+	cin.clear();
+	cin.ignore(10000, '\n');
+}
+template <typename T>
+T GetCorrectNumber(T min, T max, string Message)
+{
+	T vvod;
+	cout << Message;
+	while ((cin >> vvod).fail() || (vvod <= min) || (vvod>max) )
+	{
+		StreamInit();
+		cout << Message;
+	}
+	return vvod;
+}
 Pipeline InputPipeline()
 {
 	Pipeline p;
 	p.id = 1;
-	//do {
-		cout << "Input diameter:";
-		cin >> p.diameter;
-	//} while ();
-	cout << "Input length:";
-	cin >> p.length;
+	p.length = GetCorrectNumber(0.0, DBL_MAX, "Input length:");
+	p.diameter = GetCorrectNumber(0, INT_MAX, "Input diameter:");
 	p.repear = false;
 	return p;
 }
@@ -50,22 +63,19 @@ Ks InputKs()
 	Ks k;
 	k.id = 1;
 	cout << "Input name:";
-	cin.clear();
-	cin.ignore(10000, '\n');
+	StreamInit();
 	getline(cin, k.name);
-	cout << "Input a number of ceh:";
-	cin >> k.ceh;
-	cout << "Input a number of ceh in work:";
-	cin >> k.cehwork;
-	cout << "Input efficiency:";
-	cin >> k.effective;
+	cin.clear();
+	k.ceh = GetCorrectNumber(0, INT_MAX, "Input a number of ceh:");
+	k.cehwork = GetCorrectNumber(-1, k.ceh, "Input a number of ceh in work (<=number of ceh):");
+	k.effective = GetCorrectNumber(0.0, DBL_MAX, "Input efficiency:");
 	return k;
 }
 void PrintPipeline(const Pipeline& p)
 {
 	cout << "\nId: " << p.id 
-		 << "\tDiameter: " << p.diameter 
-		 << "\tLength: " << p.length 
+		 << "\tLength: " << p.length
+		 << "\tDiameter: " << p.diameter  
 		 << "\tRepear: " << (p.repear ? "In repear" : "Not in repear") << endl;
 }
 void PrintKs(const Ks& k)
@@ -80,13 +90,13 @@ void EditPipeline(Pipeline& p)
 {
 	p.repear = !p.repear;
 }
-void EditKs(Ks& k, char department)
+void EditKs(Ks& k, int LaunchCeh, int max)
 {
-	if (department == (char)"l")
+	if (LaunchCeh && k.cehwork<max)
 	{
 		k.cehwork++;
 	}
-	else
+	if (!LaunchCeh && k.cehwork)
 	{
 		k.cehwork--;
 	}
@@ -131,7 +141,7 @@ void SaveKS(const Ks& k)
 	fout.open("OutputKs.txt", ios::out);
 	if (fout.is_open())
 	{
-		fout << k.id << endl << k.name << endl << k.ceh << endl << k.cehwork << k.effective;
+		fout << k.id << endl << k.name << endl << k.ceh << endl << k.cehwork << endl << k.effective;
 		fout.close();
 	}
 }
@@ -142,9 +152,9 @@ int main()
 	bool PipeInformation = false;
 	bool KsInformation = false;
 	for ( ; ; ) {
-		int choice;
 		PrintMenu();
-		cin >> choice;
+		int choice;
+		choice = GetCorrectNumber(-1, 10, "Please, select a number from 0 to 10.\n");
 		switch (choice)
 		{
 		case 1: p = InputPipeline(); PipeInformation = true;
@@ -155,56 +165,29 @@ int main()
 			break;
 		case 4: k = LoadKs(); KsInformation = true;
 			break;
-		case 5: if (PipeInformation) 
-		{
-			PrintPipeline(p);
-		} 
-			  else
-		{
-			cout << "Pipe information has not yet been received. Enter the data by selecting 1 or 3 points.\n ";
-		}
+		case 5: if (PipeInformation) PrintPipeline(p);
+			  else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 3 points.\n ";
 			  break;
-		case 6: if (KsInformation)
-		{
-			PrintKs(k);
-		}
-			else
-		{
-			cout << "Ks information has not yet been received. Enter the data by selecting 2 or 4 points.\n ";
-		}
+		case 6: if (KsInformation) PrintKs(k);
+			  else cout << "Ks information has not been received yet. Input the data by selecting 2 or 4 points.\n ";
 			  break;
-		case 7: 
-			if (PipeInformation)
-			{
-				SavePipeline(p);
-			}
-			else
-			{
-				cout << "Pipe information has not yet been received. Enter the data by selecting 1 or 3 points.\n ";
-			}
+		case 7:
+			if (PipeInformation) SavePipeline(p);
+			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 3 points.\n ";
 			break;
 		case 8:
-			if (KsInformation)
-		{
-				SaveKS(k);
-		}
-			  else
-		{
-			cout << "Ks information has not yet been received. Enter the data by selecting 2 or 4 points.\n ";
-		}
+			if (KsInformation) SaveKS(k);
+			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 4 points.\n ";
 			break;
 		case 9: EditPipeline(p);
 			break;
-		case 10: cout << "Please, input l or s: ";
-			char department;
-			cin >> department;
-			EditKs(k, department);
+		case 10:
+			int LaunchCeh;
+			LaunchCeh = GetCorrectNumber(-1, 1, "Please, input 1 for launch or 0 for stop: ");
+			EditKs(k, LaunchCeh, k.ceh);
 			break;
-		case 0:
+		 case 0:
 			return 0;
-			break;
-		default:
-			cout << "\nPlease, choose one of the following actions. " << endl;
 			break;
 		}
 
