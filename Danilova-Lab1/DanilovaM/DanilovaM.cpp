@@ -92,14 +92,8 @@ void EditPipeline(Pipeline& p)
 }
 void EditKs(Ks& k, int LaunchCeh, int max)
 {
-	if (LaunchCeh && k.cehwork<max)
-	{
-		k.cehwork++;
-	}
-	if (!LaunchCeh && k.cehwork)
-	{
-		k.cehwork--;
-	}
+	if (LaunchCeh && k.cehwork<max) k.cehwork++;
+	if (!LaunchCeh && k.cehwork) k.cehwork--;
 }
 Pipeline LoadPipeline()
 {
@@ -153,9 +147,7 @@ int main()
 	bool KsInformation = false;
 	for ( ; ; ) {
 		PrintMenu();
-		int choice;
-		choice = GetCorrectNumber(-1, 10, "Please, select a number from 0 to 10.\n");
-		switch (choice)
+		switch (GetCorrectNumber(-1, 10, "Please, select a number from 0 to 10.\n"))
 		{
 		case 1: p = InputPipeline(); PipeInformation = true;
 			break;
@@ -182,9 +174,7 @@ int main()
 		case 9: EditPipeline(p);
 			break;
 		case 10:
-			int LaunchCeh;
-			LaunchCeh = GetCorrectNumber(-1, 1, "Please, input 1 for launch or 0 for stop: ");
-			EditKs(k, LaunchCeh, k.ceh);
+			EditKs(k, GetCorrectNumber(-1, 1, "Please, input 1 for launch or 0 for stop: "), k.ceh);
 			break;
 		 case 0:
 			return 0;
