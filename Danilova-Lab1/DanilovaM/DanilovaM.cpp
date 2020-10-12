@@ -22,7 +22,7 @@ struct Pipeline
 	int id;
 	double length;
 	int diameter;
-    bool repear;
+	bool repear;
 };
 struct Ks
 {
@@ -32,18 +32,14 @@ struct Ks
 	int cehwork;
 	double effective;
 };
-bool RightNumber(int num)
-{
-	return (num > 0) ? true : false;
-}
 Pipeline InputPipeline()
 {
 	Pipeline p;
 	p.id = 1;
-	do {
+	//do {
 		cout << "Input diameter:";
 		cin >> p.diameter;
-	} while (!RightNumber(p.diameter));
+	//} while ();
 	cout << "Input length:";
 	cin >> p.length;
 	p.repear = false;
@@ -54,7 +50,9 @@ Ks InputKs()
 	Ks k;
 	k.id = 1;
 	cout << "Input name:";
-	cin >> k.name;
+	cin.clear();
+	cin.ignore(10000, '\n');
+	getline(cin, k.name);
 	cout << "Input a number of ceh:";
 	cin >> k.ceh;
 	cout << "Input a number of ceh in work:";
@@ -141,27 +139,59 @@ int main()
 {
 	Pipeline p;
 	Ks k; 
+	bool PipeInformation = false;
+	bool KsInformation = false;
 	for ( ; ; ) {
-		int i;
+		int choice;
 		PrintMenu();
-		cin >> i;
-		switch (i)
+		cin >> choice;
+		switch (choice)
 		{
-		case 1: p = InputPipeline();
+		case 1: p = InputPipeline(); PipeInformation = true;
 			break;
-		case 2: k = InputKs();
+		case 2: k = InputKs(); KsInformation = true;
 			break;
-		case 3: SavePipeline(p);
+		case 3: p = LoadPipeline(); PipeInformation = true;
 			break;
-		case 4: SaveKS(k);
+		case 4: k = LoadKs(); KsInformation = true;
 			break;
-		case 5: PrintPipeline(p);
+		case 5: if (PipeInformation) 
+		{
+			PrintPipeline(p);
+		} 
+			  else
+		{
+			cout << "Pipe information has not yet been received. Enter the data by selecting 1 or 3 points.\n ";
+		}
+			  break;
+		case 6: if (KsInformation)
+		{
+			PrintKs(k);
+		}
+			else
+		{
+			cout << "Ks information has not yet been received. Enter the data by selecting 2 or 4 points.\n ";
+		}
+			  break;
+		case 7: 
+			if (PipeInformation)
+			{
+				SavePipeline(p);
+			}
+			else
+			{
+				cout << "Pipe information has not yet been received. Enter the data by selecting 1 or 3 points.\n ";
+			}
 			break;
-		case 6: PrintKs(k);
-			break;
-		case 7: p = LoadPipeline();
-			break;
-		case 8: k = LoadKs();
+		case 8:
+			if (KsInformation)
+		{
+				SaveKS(k);
+		}
+			  else
+		{
+			cout << "Ks information has not yet been received. Enter the data by selecting 2 or 4 points.\n ";
+		}
 			break;
 		case 9: EditPipeline(p);
 			break;
