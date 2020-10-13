@@ -65,7 +65,6 @@ Ks InputKs()
 	cout << "Input name:";
 	StreamInit();
 	getline(cin, k.name);
-	cin.clear();
 	k.ceh = GetCorrectNumber(0, INT_MAX, "Input a number of ceh:");
 	k.cehwork = GetCorrectNumber(-1, k.ceh, "Input a number of ceh in work (<=number of ceh):");
 	k.effective = GetCorrectNumber(0.0, DBL_MAX, "Input efficiency:");
