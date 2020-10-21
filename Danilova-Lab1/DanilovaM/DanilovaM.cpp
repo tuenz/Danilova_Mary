@@ -7,14 +7,12 @@ using namespace std;
 void PrintMenu() {
 	cout << "\n1. Add pipeline information.\n"
 		<< "2. Add ks information.\n"
-		<< "3. Load pipeline information from file.\n"
-		<< "4. Load ks information from file.\n"
-		<< "5. View pipeline information.\n"
-		<< "6. View ks information.\n"
-		<< "7. Save pipeline information to file.\n"
-		<< "8. Save ks information to file.\n"
-		<< "9. Change attribute 'repair' for a pipeline.\n"
-		<< "10. Launch or stop ks ceh (1/0).\n"
+		<< "3. Load pipeline and ks information from file.\n"
+		<< "4. View pipeline information.\n"
+		<< "5. View ks information.\n"
+		<< "6. Save pipeline and ks information to file.\n"
+		<< "7. Change attribute 'repair' for a pipeline.\n"
+		<< "8. Launch or stop ks ceh (1/0).\n"
 		<< "0. Exit.\n";
 }
 struct Pipeline
@@ -92,54 +90,41 @@ void EditKs(Ks& k, int LaunchCeh, int max)
 	if (LaunchCeh && k.cehwork<max) k.cehwork++;
 	if (!LaunchCeh && k.cehwork) k.cehwork--;
 }
+//изменено: чтение и запись ифнормации и о трубе, и о кс из одного и того же файла
 //исправлено: чтение из того же файла, в который записали
-Pipeline LoadPipeline()
+void LoadPipeKs(Pipeline& p, Ks& k, bool& PipeInformation, bool& KsInformation)
 {
-	Pipeline p;
 	ifstream fin;
-	fin.open("Pipeline.txt", ios::in);
+	fin.open("File.txt", ios::in);
 	if (fin.is_open())
 	{
 		fin >> p.id >> p.diameter >> p.length >> p.repear;
-		fin.close();
-	}
-	return p;
-}
-Ks LoadKs()
-{
-	Ks k;
-	ifstream fin;
-	fin.open("Ks.txt", ios::in);
-	if (fin.is_open())
-	{
 		fin >> k.id;
 		//добавлено-чтение строки с пробелом из файла
 		fin.ignore(1, '\n');
 		getline(fin, k.name);
-	    fin >> k.ceh >> k.cehwork >> k.effective;
+		fin >> k.ceh >> k.cehwork >> k.effective;
 		fin.close();
+		PipeInformation = KsInformation = true;
 	}
-	return k;
+	else 
+	{
+		cout << "An error occurred while reading the file";
+		PipeInformation = KsInformation = false;
+	}
 }
-void SavePipeline(const Pipeline& p)
+
+void SavePipeKs(const Pipeline& p, const Ks& k)
 {
 	ofstream fout;
-	fout.open("Pipeline.txt", ios::out);
+    fout.open("File.txt", ios::out);
 	if (fout.is_open())
 	{
 		fout << p.id << endl << p.diameter << endl << p.length << endl << p.repear << endl;
-		fout.close();
-	}
-}
-void SaveKS(const Ks& k)
-{
-	ofstream fout;
-	fout.open("Ks.txt", ios::out);
-	if (fout.is_open())
-	{
 		fout << k.id << endl << k.name << endl << k.ceh << endl << k.cehwork << endl << k.effective;
 		fout.close();
 	}
+	else cout << "An error occurred while writing the file";
 }
 int main()
 {
@@ -149,33 +134,28 @@ int main()
 	bool KsInformation = false;
 	for ( ; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(-1, 10, "Please, select a number from 0 to 10.\n"))
+		switch (GetCorrectNumber(-1, 8, "Please, select a number from 0 to 8.\n"))
 		{
 		case 1: p = InputPipeline(); PipeInformation = true;
 			break;
 		case 2: k = InputKs(); KsInformation = true;
 			break;
-		case 3: p = LoadPipeline(); PipeInformation = true;
+		case 3: LoadPipeKs(p, k, PipeInformation, KsInformation);
 			break;
-		case 4: k = LoadKs(); KsInformation = true;
-			break;
-		case 5: if (PipeInformation) PrintPipeline(p);
+		case 4: if (PipeInformation) PrintPipeline(p);
 			  else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 3 points.\n ";
 			  break;
-		case 6: if (KsInformation) PrintKs(k);
-			  else cout << "Ks information has not been received yet. Input the data by selecting 2 or 4 points.\n ";
+		case 5: if (KsInformation) PrintKs(k);
+			  else cout << "Ks information has not been received yet. Input the data by selecting 2 or 3 points.\n ";
 			  break;
-		case 7:
-			if (PipeInformation) SavePipeline(p);
-			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 3 points.\n ";
+		case 6:
+			if (PipeInformation && KsInformation) SavePipeKs(p, k);
+			else if (!PipeInformation) cout << "Pipe information has not been received yet. Input the data by selecting 1 or 3 points.\n ";
+			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 3 points.\n ";
+			break;
+		case 7: EditPipeline(p);
 			break;
 		case 8:
-			if (KsInformation) SaveKS(k);
-			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 4 points.\n ";
-			break;
-		case 9: EditPipeline(p);
-			break;
-		case 10:
 			EditKs(k, GetCorrectNumber(-1, 1, "Please, input 1 for launch or 0 for stop: "), k.ceh);
 			break;
 		 case 0:
