@@ -32,11 +32,7 @@ struct Ks
 	int cehwork;
 	double effective;
 };
-void StreamInit()
-{
-	cin.clear();
-	cin.ignore(10000, '\n');
-}
+//Исправлено: убрана ф-ия StreamInit ввиду отсутствия необходимости
 template <typename T>
 T GetCorrectNumber(T min, T max, string Message)
 {
@@ -44,7 +40,8 @@ T GetCorrectNumber(T min, T max, string Message)
 	cout << Message;
 	while ((cin >> vvod).fail() || (vvod <= min) || (vvod>max) )
 	{
-		StreamInit();
+		cin.clear();
+		cin.ignore(10000, '\n');
 		cout << Message;
 	}
 	return vvod;
@@ -63,7 +60,8 @@ Ks InputKs()
 	Ks k;
 	k.id = 1;
 	cout << "Input name:";
-	StreamInit();
+	//исправлено: игнорируется только символ новой строки для getline
+	cin.ignore(1, '\n');
 	getline(cin, k.name);
 	k.ceh = GetCorrectNumber(0, INT_MAX, "Input a number of ceh:");
 	k.cehwork = GetCorrectNumber(-1, k.ceh, "Input a number of ceh in work (<=number of ceh):");
@@ -94,11 +92,12 @@ void EditKs(Ks& k, int LaunchCeh, int max)
 	if (LaunchCeh && k.cehwork<max) k.cehwork++;
 	if (!LaunchCeh && k.cehwork) k.cehwork--;
 }
+//исправлено: чтение из того же файла, в который записали
 Pipeline LoadPipeline()
 {
 	Pipeline p;
 	ifstream fin;
-	fin.open("InputPipeline.txt", ios::in);
+	fin.open("Pipeline.txt", ios::in);
 	if (fin.is_open())
 	{
 		fin >> p.id >> p.diameter >> p.length >> p.repear;
@@ -110,10 +109,14 @@ Ks LoadKs()
 {
 	Ks k;
 	ifstream fin;
-	fin.open("InputKs.txt", ios::in);
+	fin.open("Ks.txt", ios::in);
 	if (fin.is_open())
 	{
-		fin >> k.id >> k.name >> k.ceh >> k.cehwork >> k.effective;
+		fin >> k.id;
+		//добавлено-чтение строки с пробелом из файла
+		fin.ignore(1, '\n');
+		getline(fin, k.name);
+	    fin >> k.ceh >> k.cehwork >> k.effective;
 		fin.close();
 	}
 	return k;
@@ -121,7 +124,7 @@ Ks LoadKs()
 void SavePipeline(const Pipeline& p)
 {
 	ofstream fout;
-	fout.open("OutputPipeline.txt", ios::out);
+	fout.open("Pipeline.txt", ios::out);
 	if (fout.is_open())
 	{
 		fout << p.id << endl << p.diameter << endl << p.length << endl << p.repear << endl;
@@ -131,7 +134,7 @@ void SavePipeline(const Pipeline& p)
 void SaveKS(const Ks& k)
 {
 	ofstream fout;
-	fout.open("OutputKs.txt", ios::out);
+	fout.open("Ks.txt", ios::out);
 	if (fout.is_open())
 	{
 		fout << k.id << endl << k.name << endl << k.ceh << endl << k.cehwork << endl << k.effective;
