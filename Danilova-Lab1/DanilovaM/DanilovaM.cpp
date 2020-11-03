@@ -2,169 +2,295 @@
 #include <fstream>
 #include <string>
 #include <limits>
+#include <vector>
+#include "Pipeline.h"
+#include "Ks.h"
+#include "Utils.h"
 using namespace std;
 
-void PrintMenu() {
-	cout << "\n1. Add pipeline information.\n"
-		<< "2. Add ks information.\n"
-		<< "3. Load pipeline and ks information from file.\n"
-		<< "4. View pipeline information.\n"
-		<< "5. View ks information.\n"
-		<< "6. Save pipeline and ks information to file.\n"
-		<< "7. Change attribute 'repair' for a pipeline.\n"
-		<< "8. Launch or stop ks ceh (1/0).\n"
+void PrintMenu() 
+{
+	cout << "\n1. Add pipeline information.\n"                    
+		<< "2. Add ks information.\n"                             
+		<< "3. Delete pipeline information.\n"                    
+		<< "4. Delete ks information.\n"                          
+		<< "5. Load pipeline and ks information from file.\n"     
+		<< "6. View information about all pipelines.\n"           
+		<< "7. View information about all ks.\n"                  
+		<< "8. Save all information to file.\n"                   
+		<< "9. Launch or stop ks ceh.\n"
+		<< "10. Batch editing of pipelines.\n"
+		<< "11. Pipelines search by filter.\n"                   
+		<< "12. Ks search by filter.\n"                           
 		<< "0. Exit.\n";
 }
-struct Pipeline
+void SavePipeline(ofstream& fout, const Pipeline& p)
 {
-	int id;
-	double length;
-	int diameter;
-	bool repear;
-};
-struct Ks
-{
-	int id;
-	string name;
-	int ceh;
-	int cehwork;
-	double effective;
-};
-//Исправлено: убрана ф-ия StreamInit ввиду отсутствия необходимости
-template <typename T>
-T GetCorrectNumber(T min, T max, string Message)
-{
-	T vvod;
-	cout << Message;
-	while ((cin >> vvod).fail() || (vvod <= min) || (vvod>max) )
-	{
-		cin.clear();
-		cin.ignore(10000, '\n');
-		cout << Message;
-	}
-	return vvod;
+	fout << p.diameter << endl << p.length << endl << p.repear << endl;
 }
-Pipeline InputPipeline()
+Pipeline LoadPipeline(ifstream& fin)
 {
 	Pipeline p;
-	p.id = 1;
-	p.length = GetCorrectNumber(0.0, DBL_MAX, "Input length:");
-	p.diameter = GetCorrectNumber(0, INT_MAX, "Input diameter:");
-	p.repear = false;
+	fin >> p.diameter >> p.length >> p.repear;
 	return p;
 }
-Ks InputKs()
+void SaveKs(ofstream& fout, const Ks& k)
+{
+	fout << k.name << endl << k.ceh << endl << k.cehwork << endl << k.effective << endl;
+}
+Ks LoadKs(ifstream& fin)
 {
 	Ks k;
-	k.id = 1;
-	cout << "Input name:";
-	//исправлено: игнорируется только символ новой строки для getline
-	cin.ignore(1, '\n');
-	getline(cin, k.name);
-	k.ceh = GetCorrectNumber(0, INT_MAX, "Input a number of ceh:");
-	k.cehwork = GetCorrectNumber(-1, k.ceh, "Input a number of ceh in work (<=number of ceh):");
-	k.effective = GetCorrectNumber(0.0, DBL_MAX, "Input efficiency:");
+	fin.ignore(1, '\n');
+	getline(fin, k.name);
+	fin >> k.ceh >> k.cehwork >> k.effective;
 	return k;
 }
-void PrintPipeline(const Pipeline& p)
+string AskingForName()
 {
-	cout << "\nId: " << p.id 
-		 << "\tLength: " << p.length
-		 << "\tDiameter: " << p.diameter  
-		 << "\tRepear: " << (p.repear ? "In repear" : "Not in repear") << endl;
+	string filename;
+	cout << "\nPlease, enter the name: ";
+	cin.ignore(1, '\n');
+	getline(cin, filename);
+	return filename;
 }
-void PrintKs(const Ks& k)
+void LoadAll(vector<Pipeline>& Pipeline_s, vector <Ks>& Ks_s)
 {
-	cout << "\nId: " << k.id
-		 << "\tName: " << k.name
-		 << "\tNumber of ceh: " << k.ceh
-		 << "\tNumber of ceh in work: " << k.cehwork
-	     << "\tEfficiency: " << k.effective;
+		ifstream fin;
+		fin.open(AskingForName(), ios::in);
+		if (fin.is_open())
+		{
+			int count_pipelines, count_ks;
+			fin >> count_pipelines;
+			Pipeline_s.reserve(count_pipelines);
+			while (count_pipelines--)
+				Pipeline_s.push_back(LoadPipeline(fin));
+			fin >> count_ks;
+			Ks_s.reserve(count_ks);
+			while (count_ks--)
+				Ks_s.push_back(LoadKs(fin));
+			fin.close();
+		}
+		else cout << "File with this name does not exist.\n";
 }
-void EditPipeline(Pipeline& p)
+void SaveAll(const vector<Pipeline>& Pipeline_s, const vector <Ks>& Ks_s)
 {
-	p.repear = !p.repear;
-}
-void EditKs(Ks& k, int LaunchCeh, int max)
-{
-	if (LaunchCeh && k.cehwork<max) k.cehwork++;
-	if (!LaunchCeh && k.cehwork) k.cehwork--;
-}
-//изменено: чтение и запись ифнормации и о трубе, и о кс из одного и того же файла
-//исправлено: чтение из того же файла, в который записали
-void LoadPipeKs(Pipeline& p, Ks& k, bool& PipeInformation, bool& KsInformation)
-{
-	ifstream fin;
-	fin.open("File.txt", ios::in);
-	if (fin.is_open())
+	if ((Pipeline_s.size() == 0) or (Ks_s.size() == 0)) cout << "Pipeline or ks information has not been received yet. Input the data by selecting 1, 2 or 5 points.\n ";
+	else
 	{
-		fin >> p.id >> p.diameter >> p.length >> p.repear;
-		fin >> k.id;
-		//добавлено-чтение строки с пробелом из файла
-		fin.ignore(1, '\n');
-		getline(fin, k.name);
-		fin >> k.ceh >> k.cehwork >> k.effective;
-		fin.close();
-		PipeInformation = KsInformation = true;
-	}
-	else 
-	{
-		cout << "An error occurred while reading the file";
-		PipeInformation = KsInformation = false;
+		ofstream fout;
+		fout.open(AskingForName(), ios::out);
+		if (fout.is_open())
+		{
+			fout << Pipeline_s.size() << endl;
+			for (const auto& p : Pipeline_s) SavePipeline(fout, p);
+			fout << Ks_s.size() << endl;
+			for (const auto& k : Ks_s) SaveKs(fout, k);
+			fout.close();
+		}
+		else cout << "An error occured while writing the file.";
 	}
 }
 
-void SavePipeKs(const Pipeline& p, const Ks& k)
+template<class C, typename T>
+using Filter = bool(*)(const C& pk, T param);
+template<class C>
+bool CheckById(const C& pc, unsigned int id)
 {
-	ofstream fout;
-    fout.open("File.txt", ios::out);
-	if (fout.is_open())
-	{
-		fout << p.id << endl << p.diameter << endl << p.length << endl << p.repear << endl;
-		fout << k.id << endl << k.name << endl << k.ceh << endl << k.cehwork << endl << k.effective;
-		fout.close();
-	}
-	else cout << "An error occurred while writing the file";
+	return pc.id == id;
 }
+bool CheckByRepear(const Pipeline& p, bool repear)
+{
+	return p.repear == repear;
+}
+bool CheckByName(const Ks& k, string name)
+{
+	return k.name == name;
+}
+bool CheckBy_Percent_Unused_Ceh(const Ks& k, double percent)
+{
+	return percent <= (double)(100*(k.ceh-k.cehwork)/k.ceh);
+}
+template<class C, typename T>
+vector<int> FindObjectsByFilter(const vector<C>& PK_s, Filter<C, T> f, T param)
+{
+	vector <int> res;
+	int i = 0;
+	for (const auto& pk : PK_s)
+	{
+		if (f(pk, param))
+			res.push_back(i);
+		i++;
+	}
+	if (res.size() == 0) cout << "Object not found.\n";
+	return res;
+}
+void BatchEditPipes(vector<Pipeline>& Pipeline_s)
+{
+	unsigned int choice;
+	while (choice = (unsigned int)GetCorrectNumber(-0.5, DBL_MAX, "\nPlease, select correct id of the pipeline you want to edit; enter 0 to stop and go to menu: "))
+	{
+		for (int i : FindObjectsByFilter(Pipeline_s, CheckById, choice)) Pipeline_s[i].EditPipeline();
+	}
+}
+void EditAllPipes(vector<Pipeline>& Pipeline_s)
+{
+	for (int i = 0; i <= Pipeline_s.size() - 1; i++) Pipeline_s[i].EditPipeline();
+}
+template <class C>
+void DelPipeKs(vector<C>& PK_s)
+{
+	int check = 1;
+	while (check)
+	{
+		for (int i : FindObjectsByFilter(PK_s, CheckById, GetCorrectNumber(0u, UINT_MAX, "\nPlease, select correct id of the ks you want to delete: ")))
+		{
+			PK_s.erase(PK_s.cbegin() + i);
+			check = 0;
+		}
+	}
+}
+
 int main()
 {
-	Pipeline p;
-	Ks k; 
-	bool PipeInformation = false;
-	bool KsInformation = false;
+	vector <Pipeline> Pipeline_s;
+	vector <Ks> Ks_s;
 	for ( ; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(-1, 8, "Please, select a number from 0 to 8.\n"))
+		switch (GetCorrectNumber(-1, 12, "Please, select a number from 0 to 12.\n"))
 		{
-		case 1: p = InputPipeline(); PipeInformation = true;
-			break;
-		case 2: k = InputKs(); KsInformation = true;
-			break;
-		case 3: LoadPipeKs(p, k, PipeInformation, KsInformation);
-			break;
-		case 4: if (PipeInformation) PrintPipeline(p);
-			  else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 3 points.\n ";
-			  break;
-		case 5: if (KsInformation) PrintKs(k);
-			  else cout << "Ks information has not been received yet. Input the data by selecting 2 or 3 points.\n ";
-			  break;
-		case 6:
-			if (PipeInformation && KsInformation) SavePipeKs(p, k);
-			else if (!PipeInformation) cout << "Pipe information has not been received yet. Input the data by selecting 1 or 3 points.\n ";
-			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 3 points.\n ";
-			break;
-		case 7: EditPipeline(p);
-			break;
-		case 8:
-			EditKs(k, GetCorrectNumber(-1, 1, "Please, input 1 for launch or 0 for stop: "), k.ceh);
-			break;
-		 case 0:
-			return 0;
+		case 1:
+		{
+			Pipeline p;
+			cin >> p;
+			Pipeline_s.push_back(p);
 			break;
 		}
-
+		case 2: 
+		{
+			Ks k;
+			cin >> k;
+			Ks_s.push_back(k);
+			break;
+		}
+		case 3: 
+		{
+			if (Pipeline_s.size())
+			{
+				DelPipeKs(Pipeline_s);
+			}
+			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 5 points.\n ";
+			break;
+		}
+		case 4: 
+		{
+			if (Ks_s.size())
+			{
+				DelPipeKs(Ks_s);
+			}
+			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
+			break;
+		}
+		case 5: 
+		{
+			LoadAll(Pipeline_s, Ks_s);
+			break;
+		}
+		case 6:
+		{
+			if (Pipeline_s.size())
+			{ 
+				for (const auto& p : Pipeline_s) cout << p << endl; 
+			}
+			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 5 points.\n ";
+			break;
+		}
+		case 7: 
+ 		{
+			if (Ks_s.size())
+			{
+				for (const auto& k : Ks_s) cout << k << endl;
+			}
+			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
+			break;
+		}
+		case 8:
+		{
+			SaveAll(Pipeline_s, Ks_s);
+			break;
+		}
+		case 9:
+		{
+			if (Ks_s.size())
+			{
+				int check = 1;
+				while (check)
+				{
+					for (int i : FindObjectsByFilter(Ks_s, CheckById, GetCorrectNumber(0u, UINT_MAX, "\nPlease, select correct id of the ks you want to edit: ")))
+					{
+						Ks_s[i].EditKs(GetCorrectNumber(-1, 1, "Please, input 1 for launch or 0 for stop: "));
+						check = 0;
+					}
+				}
+			}
+			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
+			break;
+		}
+		case 10:
+		{
+			if (Pipeline_s.size())
+			{
+				if (GetCorrectNumber(-1, 1, "Please, input 0 to edit all pipelines or 1 to batch egiting of pipelines: "))
+				{
+					BatchEditPipes(Pipeline_s);
+				}
+				else {
+					EditAllPipes(Pipeline_s);
+				}
+			}
+			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 5 points.\n ";
+			break;
+		}
+		case 11:
+		{
+			if (Pipeline_s.size()) 
+			{
+				if (GetCorrectNumber(-1, 1, "Please, input 0 for pipeline search by id or 1 for pipeline search by attribute 'in repear': "))
+				{
+					for (int i : FindObjectsByFilter(Pipeline_s, CheckByRepear, (bool)GetCorrectNumber(-1, 1, "\nPlease, enter 0 to find pipelines not in repear and 1 to find pipelines in repear: ")))
+						cout << Pipeline_s[i];
+				}
+				else
+				{
+					for (int i : FindObjectsByFilter(Pipeline_s, CheckById, GetCorrectNumber(0u, UINT_MAX, "\nPlease, select correct id of the pipeline you want to find: ")))
+						cout << Pipeline_s[i];
+				}
+			}
+			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 5 points.\n ";
+		    break;
+		}
+		case 12:
+		{
+			if (Ks_s.size())
+			{
+				if (GetCorrectNumber(-1, 1, "Please, input 0 for ks search by name or 1 for ks search by the percentage of unused cehworks: "))
+				{
+					for (int i : FindObjectsByFilter(Ks_s, CheckBy_Percent_Unused_Ceh, (double)GetCorrectNumber(-1, 100, "\nPlease, enter the percentage of unused cehworks(%): ")))
+						cout << Ks_s[i];
+				}
+				else {
+					for (int i : FindObjectsByFilter(Ks_s, CheckByName, AskingForName()))
+						cout << Ks_s[i];
+				}
+			}
+			else  cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
+			break;
+		}
+		 case 0:
+		 {
+			 return 0;
+		     break; 
+		 }
+		}
 	}
-
 }
-
-
