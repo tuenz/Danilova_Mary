@@ -1,4 +1,10 @@
-﻿#include <iostream>
+﻿//исправления: 
+//-идентификаторы - доступ private 
+//-в ф-ию GetCorrectNumber входят обе границы (отрезок)
+//-в файл можно сохранить кс (трубы), если нет информации о трубах (кс) 
+//-программа не ждет, пока пользователь введет хотя бы 1 существующий идентификатор трубы для удаления/редактирования {убрано while(1)...}
+//-перегрузка операторов (для записи/чтения файла)
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <limits>
@@ -24,28 +30,7 @@ void PrintMenu()
 		<< "12. Ks search by filter.\n"                           
 		<< "0. Exit.\n";
 }
-void SavePipeline(ofstream& fout, const Pipeline& p)
-{
-	fout << p.diameter << endl << p.length << endl << p.repear << endl;
-}
-Pipeline LoadPipeline(ifstream& fin)
-{
-	Pipeline p;
-	fin >> p.diameter >> p.length >> p.repear;
-	return p;
-}
-void SaveKs(ofstream& fout, const Ks& k)
-{
-	fout << k.name << endl << k.ceh << endl << k.cehwork << endl << k.effective << endl;
-}
-Ks LoadKs(ifstream& fin)
-{
-	Ks k;
-	fin.ignore(1, '\n');
-	getline(fin, k.name);
-	fin >> k.ceh >> k.cehwork >> k.effective;
-	return k;
-}
+
 string AskingForName()
 {
 	string filename;
@@ -54,28 +39,30 @@ string AskingForName()
 	getline(cin, filename);
 	return filename;
 }
+
 void LoadAll(vector<Pipeline>& Pipeline_s, vector <Ks>& Ks_s)
 {
 		ifstream fin;
 		fin.open(AskingForName(), ios::in);
 		if (fin.is_open())
 		{
-			int count_pipelines, count_ks;
-			fin >> count_pipelines;
-			Pipeline_s.reserve(count_pipelines);
-			while (count_pipelines--)
-				Pipeline_s.push_back(LoadPipeline(fin));
-			fin >> count_ks;
-			Ks_s.reserve(count_ks);
-			while (count_ks--)
-				Ks_s.push_back(LoadKs(fin));
+			int num_pipelines, num_ks;
+			fin >> num_pipelines;
+			fin >> num_ks;
+			Pipeline_s.resize(num_pipelines);
+			Ks_s.resize(num_ks);
+			for (Pipeline& p : Pipeline_s)
+				fin >> p;
+			for (Ks& k : Ks_s)
+				fin >> k;
 			fin.close();
 		}
 		else cout << "File with this name does not exist.\n";
 }
 void SaveAll(const vector<Pipeline>& Pipeline_s, const vector <Ks>& Ks_s)
 {
-	if ((Pipeline_s.size() == 0) or (Ks_s.size() == 0)) cout << "Pipeline or ks information has not been received yet. Input the data by selecting 1, 2 or 5 points.\n ";
+	if ((!Pipeline_s.size()) and (!Ks_s.size())) 
+		cout << "Pipeline and ks information has not been received yet. Input the data by selecting 1, 2 or 5 points.\n ";
 	else
 	{
 		ofstream fout;
@@ -83,9 +70,11 @@ void SaveAll(const vector<Pipeline>& Pipeline_s, const vector <Ks>& Ks_s)
 		if (fout.is_open())
 		{
 			fout << Pipeline_s.size() << endl;
-			for (const auto& p : Pipeline_s) SavePipeline(fout, p);
 			fout << Ks_s.size() << endl;
-			for (const auto& k : Ks_s) SaveKs(fout, k);
+			for (const auto& p : Pipeline_s)
+				fout << p;
+			for (const auto& k : Ks_s)
+				fout << k;
 			fout.close();
 		}
 		else cout << "An error occured while writing the file.";
@@ -97,7 +86,7 @@ using Filter = bool(*)(const C& pk, T param);
 template<class C>
 bool CheckById(const C& pc, unsigned int id)
 {
-	return pc.id == id;
+	return pc.GetId() == id;
 }
 bool CheckByRepear(const Pipeline& p, bool repear)
 {
@@ -116,9 +105,9 @@ vector<int> FindObjectsByFilter(const vector<C>& PK_s, Filter<C, T> f, T param)
 {
 	vector <int> res;
 	int i = 0;
-	for (const auto& pk : PK_s)
+	for (const auto& object : PK_s)
 	{
-		if (f(pk, param))
+		if (f(object, param))
 			res.push_back(i);
 		i++;
 	}
@@ -127,27 +116,30 @@ vector<int> FindObjectsByFilter(const vector<C>& PK_s, Filter<C, T> f, T param)
 }
 void BatchEditPipes(vector<Pipeline>& Pipeline_s)
 {
-	unsigned int choice;
-	while (choice = (unsigned int)GetCorrectNumber(-0.5, DBL_MAX, "\nPlease, select correct id of the pipeline you want to edit; enter 0 to stop and go to menu: "))
+	int choice;
+	while ((choice = GetCorrectNumber(-1, INT_MAX, 
+									"\nPlease, select correct id of the pipeline you want to edit; enter -1 to stop and go to menu: "))!=-1)
 	{
-		for (int i : FindObjectsByFilter(Pipeline_s, CheckById, choice)) Pipeline_s[i].EditPipeline();
+		for (int i : FindObjectsByFilter(Pipeline_s, CheckById, (unsigned int)choice))
+		{
+			Pipeline_s[i].EditPipeline();
+			cout << "Done.\n";
+		}
 	}
 }
 void EditAllPipes(vector<Pipeline>& Pipeline_s)
 {
-	for (int i = 0; i <= Pipeline_s.size() - 1; i++) Pipeline_s[i].EditPipeline();
+	for (auto& p: Pipeline_s) 
+		p.EditPipeline();
 }
 template <class C>
 void DelPipeKs(vector<C>& PK_s)
 {
-	int check = 1;
-	while (check)
+	for (int i : FindObjectsByFilter(PK_s, CheckById, GetCorrectNumber(0u, UINT_MAX,
+		"\nPlease, select correct id of the ks you want to delete: ")))
 	{
-		for (int i : FindObjectsByFilter(PK_s, CheckById, GetCorrectNumber(0u, UINT_MAX, "\nPlease, select correct id of the ks you want to delete: ")))
-		{
-			PK_s.erase(PK_s.cbegin() + i);
-			check = 0;
-		}
+		PK_s.erase(PK_s.cbegin() + i);
+		cout << "Done.\n";
 	}
 }
 
@@ -157,7 +149,7 @@ int main()
 	vector <Ks> Ks_s;
 	for ( ; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(-1, 12, "Please, select a number from 0 to 12.\n"))
+		switch (GetCorrectNumber(0, 12, "Please, select a number from 0 to 12.\n"))
 		{
 		case 1:
 		{
@@ -223,14 +215,11 @@ int main()
 		{
 			if (Ks_s.size())
 			{
-				int check = 1;
-				while (check)
+				for (int i : FindObjectsByFilter(Ks_s, CheckById, GetCorrectNumber(0u, UINT_MAX,
+					"\nPlease, select correct id of the ks you want to edit: ")))
 				{
-					for (int i : FindObjectsByFilter(Ks_s, CheckById, GetCorrectNumber(0u, UINT_MAX, "\nPlease, select correct id of the ks you want to edit: ")))
-					{
-						Ks_s[i].EditKs(GetCorrectNumber(-1, 1, "Please, input 1 for launch or 0 for stop: "));
-						check = 0;
-					}
+					Ks_s[i].EditKs(GetCorrectNumber(0, 1, "Please, input 1 for launch or 0 for stop: "));
+
 				}
 			}
 			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
@@ -240,7 +229,7 @@ int main()
 		{
 			if (Pipeline_s.size())
 			{
-				if (GetCorrectNumber(-1, 1, "Please, input 0 to edit all pipelines or 1 to batch egiting of pipelines: "))
+				if (GetCorrectNumber(0, 1, "Please, input 0 to edit all pipelines or 1 to batch egiting of pipelines: "))
 				{
 					BatchEditPipes(Pipeline_s);
 				}
@@ -255,14 +244,15 @@ int main()
 		{
 			if (Pipeline_s.size()) 
 			{
-				if (GetCorrectNumber(-1, 1, "Please, input 0 for pipeline search by id or 1 for pipeline search by attribute 'in repear': "))
+				if (GetCorrectNumber(0, 1, "Please, input 0 for pipeline search by id or 1 for pipeline search by attribute 'in repear': "))
 				{
 					for (int i : FindObjectsByFilter(Pipeline_s, CheckByRepear, (bool)GetCorrectNumber(-1, 1, "\nPlease, enter 0 to find pipelines not in repear and 1 to find pipelines in repear: ")))
 						cout << Pipeline_s[i];
 				}
 				else
 				{
-					for (int i : FindObjectsByFilter(Pipeline_s, CheckById, GetCorrectNumber(0u, UINT_MAX, "\nPlease, select correct id of the pipeline you want to find: ")))
+					for (int i : FindObjectsByFilter(Pipeline_s, CheckById, GetCorrectNumber(0u, UINT_MAX, 
+						"\nPlease, select correct id of the pipeline you want to find: ")))
 						cout << Pipeline_s[i];
 				}
 			}
@@ -273,9 +263,10 @@ int main()
 		{
 			if (Ks_s.size())
 			{
-				if (GetCorrectNumber(-1, 1, "Please, input 0 for ks search by name or 1 for ks search by the percentage of unused cehworks: "))
+				if (GetCorrectNumber(0, 1, "Please, input 0 for ks search by name or 1 for ks search by the percentage of unused cehworks: "))
 				{
-					for (int i : FindObjectsByFilter(Ks_s, CheckBy_Percent_Unused_Ceh, (double)GetCorrectNumber(-1, 100, "\nPlease, enter the percentage of unused cehworks(%): ")))
+					for (int i : FindObjectsByFilter(Ks_s, CheckBy_Percent_Unused_Ceh, GetCorrectNumber(0.0, 100.0,
+						"\nPlease, enter the percentage of unused cehworks(%): ")))
 						cout << Ks_s[i];
 				}
 				else {
