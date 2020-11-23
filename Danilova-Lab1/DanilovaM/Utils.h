@@ -2,7 +2,6 @@
 #include <iostream>
 #include <string>
 template <typename T>
-//нижн€€ граница помен€ть
 T GetCorrectNumber(T min, T max, std::string Message)
 {
 	T vvod;
