@@ -6,7 +6,7 @@ using namespace std;
 int Ks::MaxId = 0;
 Ks::Ks()
 {
-	id = MaxId++;
+	id = ++MaxId;
 	name = "NoName";
 	ceh = 0;
 	cehwork = 0;

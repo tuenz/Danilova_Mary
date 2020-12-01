@@ -140,11 +140,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Ks.cpp" />
+    <ClCompile Include="Network.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="DanilovaM.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Ks.h" />
+    <ClInclude Include="Network.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>

@@ -10,6 +10,8 @@ public:
 	double length;
 	int diameter;
 	bool repear;
+	int InputId;
+	int OutputId;
 
 	Pipeline();
 	void EditPipeline();

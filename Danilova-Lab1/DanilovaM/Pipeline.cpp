@@ -6,10 +6,12 @@ using namespace std;
 int Pipeline::MaxId = 0;
 Pipeline::Pipeline()
 {
-	id = MaxId++;
+	id = ++MaxId;
 	length = 0.0;
 	diameter = 0;
 	repear = false;
+	InputId = 0;
+	OutputId = 0;
 }
 void Pipeline::EditPipeline()
 {

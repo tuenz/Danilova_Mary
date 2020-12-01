@@ -1,29 +1,34 @@
-﻿//исправления: vector->unordered_map
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 #include <string>
 #include <limits>
-#include <unordered_map>
 #include <vector>
+#include <unordered_map>
+#include <map>
+#include <set> 
 #include "Pipeline.h"
 #include "Ks.h"
 #include "Utils.h"
+#include "Network.h"
 using namespace std;
 
-void PrintMenu() 
+void PrintMenu()
 {
-	cout << "\n1. Add pipeline information.\n"                    
-		<< "2. Add ks information.\n"                             
-		<< "3. Delete pipeline information.\n"                    
-		<< "4. Delete ks information.\n"                          
-		<< "5. Load pipeline and ks information from file.\n"     
-		<< "6. View information about all pipelines.\n"           
-		<< "7. View information about all ks.\n"                  
-		<< "8. Save all information to file.\n"                   
+	cout << "\n1. Add pipeline information.\n"
+		<< "2. Add ks information.\n"
+		<< "3. Delete pipeline information.\n"
+		<< "4. Delete ks information.\n"
+		<< "5. Load pipeline and ks information from file.\n"
+		<< "6. View information about all pipelines.\n"
+		<< "7. View information about all ks.\n"
+		<< "8. Save all information to file.\n"
 		<< "9. Launch or stop ks ceh.\n"
 		<< "10. Batch editing of pipelines.\n"
-		<< "11. Pipelines search by filter.\n"                   
-		<< "12. Ks search by filter.\n"                           
+		<< "11. Pipelines search by filter.\n"
+		<< "12. Ks search by filter.\n"
+		<< "13. Choose parts for transmission network.\n"
+		<< "14. Create transmission network.\n"
+		<< "15. Show graph adjacency table.\n"
 		<< "0. Exit.\n";
 }
 
@@ -64,7 +69,6 @@ void LoadAll(unordered_map<int, Pipeline>& Pipeline_s, unordered_map <int, Ks>& 
 	}
 	else cout << "File with this name does not exist.\n";
 }
-
 void SaveAll(const unordered_map<int, Pipeline>& Pipeline_s, const unordered_map <int, Ks>& Ks_s)
 {
 	if ((!Pipeline_s.size()) and (!Ks_s.size()))
@@ -88,7 +92,7 @@ void SaveAll(const unordered_map<int, Pipeline>& Pipeline_s, const unordered_map
 	}
 }
 
-template<class C, typename T>
+template<typename C, typename T>
 using Filter = bool(*)(const C& pk, T param);
 bool CheckByRepear(const Pipeline& p, bool repear)
 {
@@ -100,9 +104,9 @@ bool CheckByName(const Ks& k, string name)
 }
 bool CheckBy_Percent_Unused_Ceh(const Ks& k, double percent)
 {
-	return percent <= (double)(100*(k.ceh-k.cehwork)/k.ceh);
+	return percent <= (double)(100 * (k.ceh - k.cehwork) / k.ceh);
 }
-template<class C, typename T>
+template<typename C, typename T>
 vector<int> FindObjectsByFilter(const unordered_map<int, C>& PK_s, Filter<C, T> f, T param)
 {
 	vector <int> res;
@@ -116,11 +120,8 @@ vector<int> FindObjectsByFilter(const unordered_map<int, C>& PK_s, Filter<C, T> 
 	if (res.size() == 0) cout << "Object not found.\n";
 	return res;
 }
-
-void BatchEditPipes(unordered_map<int, Pipeline>& Pipeline_s)
+void BatchEditPipes(unordered_map<int, Pipeline>& Pipeline_s, Network& n)
 {
-	// информация взята с сайта
-	//https://www.cplusplus.com/reference/unordered_map/unordered_map/find/
 	int choice;
 	while ((choice = GetCorrectNumber(-1, INT_MAX,
 		"\nPlease, select correct id of the pipeline you want to edit; enter -1 to stop and go to menu: ")) != -1)
@@ -132,28 +133,57 @@ void BatchEditPipes(unordered_map<int, Pipeline>& Pipeline_s)
 		{
 			got->second.EditPipeline();
 			cout << "Done.\n";
+			for (const auto& obj : n.GtsPipe)
+			{
+				if (obj == got->first)
+					n.NetworkExist = false;
+			}
 		}
 	}
 }
-void EditAllPipes(unordered_map <int, Pipeline>& Pipeline_s)
+
+void EditAllPipes(unordered_map <int, Pipeline>& Pipeline_s, Network& n)
 {
 	for (auto& p : Pipeline_s)
 	{
 		p.second.EditPipeline();
 	}
 	cout << "Done.\n";
+	n.NetworkExist = false;
 }
-template <class C>
-void DelPipeKs(unordered_map<int, C>& PK_s)
+
+void DelPipe(unordered_map<int, Pipeline>& Pipeline_s, Network& n)
 {
-	typename unordered_map<int, C>::iterator got = PK_s.find(GetCorrectNumber(0, INT_MAX,
+	unordered_map<int, Pipeline>::iterator got = Pipeline_s.find(GetCorrectNumber(0, INT_MAX,
 		"\nPlease, select correct id of the object you want to delete: "));
-	//https://www.cyberforum.ru/cpp-beginners/thread2482067.html
-	if (got == PK_s.end())
+	if (got == Pipeline_s.end())
 		cout << "Object not found.\n";
 	else
 	{
-		PK_s.erase(got->first);
+		for (const auto& obj : n.GtsPipe)
+		{
+			if (obj == got->second.GetId())
+				n.NetworkExist = false;
+		}
+		Pipeline_s.erase(got->first);
+		cout << "Done.\n";
+	}
+}
+
+void DelKs(unordered_map<int, Ks>& Ks_s, Network& n)
+{
+	unordered_map<int, Ks>::iterator got = Ks_s.find(GetCorrectNumber(0, INT_MAX,
+		"\nPlease, select correct id of the object you want to delete: "));
+	if (got == Ks_s.end())
+		cout << "Object not found.\n";
+	else
+	{
+		for (const auto& obj : n.GtsKs)
+		{
+			if (obj == got->second.GetId())
+				n.NetworkExist = false;
+		}
+		Ks_s.erase(got->first);
 		cout << "Done.\n";
 	}
 }
@@ -162,10 +192,10 @@ int main()
 {
 	unordered_map <int, Pipeline> Pipeline_s;
 	unordered_map <int, Ks> Ks_s;
-	for ( ; ; ) 
-	{
+	Network n;
+	for (; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(0, 12, "Please, select a number from 0 to 12.\n"))
+		switch (GetCorrectNumber(0, 15, "Please, select a number from 0 to 12.\n"))
 		{
 		case 1:
 		{
@@ -185,7 +215,7 @@ int main()
 		{
 			if (Pipeline_s.size())
 			{
-				DelPipeKs(Pipeline_s);
+				DelPipe(Pipeline_s, n);
 			}
 			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 5 points.\n ";
 			break;
@@ -194,7 +224,7 @@ int main()
 		{
 			if (Ks_s.size())
 			{
-				DelPipeKs(Ks_s);
+				DelKs(Ks_s, n);
 			}
 			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
 			break;
@@ -202,6 +232,7 @@ int main()
 		case 5:
 		{
 			LoadAll(Pipeline_s, Ks_s);
+			n.NetworkExist = false;
 			break;
 		}
 		case 6:
@@ -250,11 +281,10 @@ int main()
 			{
 				if (GetCorrectNumber(0, 1, "Please, input 0 to edit all pipelines or 1 to batch egiting of pipelines: "))
 				{
-					BatchEditPipes(Pipeline_s);
+					BatchEditPipes(Pipeline_s, n);
 				}
-				else
-				{
-					EditAllPipes(Pipeline_s);
+				else {
+					EditAllPipes(Pipeline_s, n);
 				}
 			}
 			else cout << "Pipe information has not been received yet. Input the data by selecting 1 or 5 points.\n ";
@@ -302,11 +332,30 @@ int main()
 			else  cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
 			break;
 		}
+		case 13:
+		{
+			n.CreateConnection(Pipeline_s, Ks_s);
+			break;
+		}
+		case 14:
+		{
+			if (!n.NetworkExist)
+				n.CreateNetwork(Pipeline_s);
+			else cout << "Network has already exist.\n";
+			break;
+		}
+		case 15:
+		{
+			if (n.NetworkExist)
+				n.PrintNetwork();
+			else cout << "The network has not yet been created or the integrity of the network has been compromised.\n";
+			break;
+		}
 		case 0:
 		{
 			return 0;
 			break;
 		}
 		}
-    }
+	}
 }
