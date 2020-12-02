@@ -1,5 +1,7 @@
 #include "Network.h"
 #include "Utils.h"
+#include <stack>
+#include <numeric> 
 
 Network::Network()
 {
@@ -101,3 +103,44 @@ void Network::PrintNetwork()
 	}
 	cout << "\n\n";
 }
+
+void Network::TopolSort()
+{
+	map <int, int> prom;
+	int line;
+	int length = (int)mGtsKs.size();
+	map<pair<int, int>, int>  matr;
+
+	for (const auto& line : mGtsKs)
+			for (const auto& column : mGtsKs)
+			matr[make_pair(line.first, column.first)]=network[make_pair(line.first, column.first)];
+	int pos=0;
+	unordered_map <int, int>::iterator it = mGtsKs.end();
+	for (int i = 0; i <= (int)mGtsKs.size()-1; i++)
+	{
+		for (line=0; line<=length; line++)
+		{
+			pos++;
+			int summ = 0;
+			for (int column = 0; column <= length; column++)
+				summ += matr[make_pair(line, column)];
+			if (summ == 0)
+			{
+				it--;
+				prom.insert(pair<int, int> (pos, (it->second)));
+				for (int stolb = 0; stolb <= length; stolb++)
+				{
+				    matr.erase(make_pair(line, stolb));
+					matr.erase(make_pair(stolb, line));
+				}
+				length--;
+				break;
+			}
+		}
+	}
+	cout << "Topological sort:\n";
+	for (auto it = prom.begin(); it != prom.end(); it++)
+		cout << it->second << "<-";
+	cout << endl;
+}
+

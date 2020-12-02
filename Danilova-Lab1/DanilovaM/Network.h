@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <map>
 #include <set>
+#include <stack>
 using namespace std;
 
 class Network
@@ -21,4 +22,5 @@ public:
 	void CreateConnection(unordered_map<int, Pipeline>& Pipeline_s, unordered_map<int, Ks>& Ks_s);
 	void CreateNetwork(unordered_map<int, Pipeline>& Pipeline_s);
 	void PrintNetwork();
+	void TopolSort();
 };

@@ -29,6 +29,7 @@ void PrintMenu()
 		<< "13. Choose parts for transmission network.\n"
 		<< "14. Create transmission network.\n"
 		<< "15. Show graph adjacency table.\n"
+		<< "16. Topological sort of graph.\n"
 		<< "0. Exit.\n";
 }
 
@@ -195,7 +196,7 @@ int main()
 	Network n;
 	for (; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(0, 15, "Please, select a number from 0 to 12.\n"))
+		switch (GetCorrectNumber(0, 16, "Please, select a number from 0 to 12.\n"))
 		{
 		case 1:
 		{
@@ -348,6 +349,13 @@ int main()
 		{
 			if (n.NetworkExist)
 				n.PrintNetwork();
+			else cout << "The network has not yet been created or the integrity of the network has been compromised.\n";
+			break;
+		}
+		case 16:
+		{
+			if (n.NetworkExist)
+				n.TopolSort();
 			else cout << "The network has not yet been created or the integrity of the network has been compromised.\n";
 			break;
 		}
