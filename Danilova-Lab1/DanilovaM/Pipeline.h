@@ -5,8 +5,8 @@ class Pipeline
 {
 private:
 	int id;
-	static int MaxId;
 public:
+	static int MaxId;
 	double length;
 	int diameter;
 	bool repear;
@@ -22,5 +22,6 @@ public:
 	friend std::ofstream& operator << (std::ofstream& fout, const Pipeline& p);
 	friend std::ifstream& operator >> (std::ifstream& fin, Pipeline& p);
 };
+
 
 

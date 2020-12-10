@@ -27,20 +27,14 @@ void PrintMenu()
 		<< "11. Pipelines search by filter.\n"
 		<< "12. Ks search by filter.\n"
 		<< "13. Choose parts for transmission network.\n"
-		<< "14. Create transmission network.\n"
-		<< "15. Show graph adjacency table.\n"
-		<< "16. Topological sort of graph.\n"
+		<< "14. Create/update transmission network.\n"
+		<< "15. Save transmission network to file.\n"
+		<< "16. Load transmission network from file.\n"
+		<< "17. Show graph adjacency table.\n"
+		<< "18. Topological sort of graph.\n"
 		<< "0. Exit.\n";
 }
 
-string AskingForName()
-{
-	string filename;
-	cout << "\nPlease, enter the name: ";
-	cin.ignore(1, '\n');
-	getline(cin, filename);
-	return filename;
-}
 
 void LoadAll(unordered_map<int, Pipeline>& Pipeline_s, unordered_map <int, Ks>& Ks_s)
 {
@@ -66,10 +60,16 @@ void LoadAll(unordered_map<int, Pipeline>& Pipeline_s, unordered_map <int, Ks>& 
 			Ks_s.insert(pair<int, Ks>(k.GetId(), k));
 		}
 		fin.close();
+		for (auto& p : Pipeline_s)
+		{
+			p.second.OutputId = 0;
+			p.second.InputId = 0;
+		}
 		cout << "Done.\n";
 	}
 	else cout << "File with this name does not exist.\n";
 }
+
 void SaveAll(const unordered_map<int, Pipeline>& Pipeline_s, const unordered_map <int, Ks>& Ks_s)
 {
 	if ((!Pipeline_s.size()) and (!Ks_s.size()))
@@ -124,21 +124,17 @@ vector<int> FindObjectsByFilter(const unordered_map<int, C>& PK_s, Filter<C, T> 
 void BatchEditPipes(unordered_map<int, Pipeline>& Pipeline_s, Network& n)
 {
 	int choice;
-	while ((choice = GetCorrectNumber(-1, INT_MAX,
+	while ((choice = GetCorrectNumber(-1, Pipeline::MaxId,
 		"\nPlease, select correct id of the pipeline you want to edit; enter -1 to stop and go to menu: ")) != -1)
 	{
-		unordered_map<int, Pipeline>::iterator got = Pipeline_s.find(choice);
+		auto got = Pipeline_s.find(choice);
 		if (got == Pipeline_s.end())
 			cout << "Object not found.\n";
 		else
 		{
 			got->second.EditPipeline();
 			cout << "Done.\n";
-			for (const auto& obj : n.GtsPipe)
-			{
-				if (obj == got->first)
-					n.NetworkExist = false;
-			}
+			n.PipeDelChanges(choice);
 		}
 	}
 }
@@ -150,41 +146,35 @@ void EditAllPipes(unordered_map <int, Pipeline>& Pipeline_s, Network& n)
 		p.second.EditPipeline();
 	}
 	cout << "Done.\n";
-	n.NetworkExist = false;
+	n.GtsPipe.clear();
 }
 
 void DelPipe(unordered_map<int, Pipeline>& Pipeline_s, Network& n)
 {
-	unordered_map<int, Pipeline>::iterator got = Pipeline_s.find(GetCorrectNumber(0, INT_MAX,
-		"\nPlease, select correct id of the object you want to delete: "));
-	if (got == Pipeline_s.end())
+	int IdDel = GetCorrectNumber(0, Pipeline::MaxId,
+		"\nPlease, select correct id of the object you want to delete: ");
+	auto IdToDelete = Pipeline_s.find(IdDel);
+	if (IdToDelete == Pipeline_s.end())
 		cout << "Object not found.\n";
 	else
 	{
-		for (const auto& obj : n.GtsPipe)
-		{
-			if (obj == got->second.GetId())
-				n.NetworkExist = false;
-		}
-		Pipeline_s.erase(got->first);
+		n.PipeDelChanges(IdDel);
+		Pipeline_s.erase(IdToDelete->first);
 		cout << "Done.\n";
 	}
 }
 
-void DelKs(unordered_map<int, Ks>& Ks_s, Network& n)
+void DelKs(unordered_map<int, Ks>& Ks_s, unordered_map <int, Pipeline>& Pipeline_s, Network& n)
 {
-	unordered_map<int, Ks>::iterator got = Ks_s.find(GetCorrectNumber(0, INT_MAX,
-		"\nPlease, select correct id of the object you want to delete: "));
-	if (got == Ks_s.end())
+	int IdDel = GetCorrectNumber(0, Ks::MaxId,
+		"\nPlease, select correct id of the object you want to delete: ");
+	auto IdToDelete = Ks_s.find(IdDel);
+	if (IdToDelete == Ks_s.end())
 		cout << "Object not found.\n";
 	else
 	{
-		for (const auto& obj : n.GtsKs)
-		{
-			if (obj == got->second.GetId())
-				n.NetworkExist = false;
-		}
-		Ks_s.erase(got->first);
+		n.KsDelChanges(IdDel, Pipeline_s);
+		Ks_s.erase(IdToDelete->first);
 		cout << "Done.\n";
 	}
 }
@@ -196,7 +186,7 @@ int main()
 	Network n;
 	for (; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(0, 16, "Please, select a number from 0 to 12.\n"))
+		switch (GetCorrectNumber(0, 18, "Please, select a number from 0 to 12.\n"))
 		{
 		case 1:
 		{
@@ -225,7 +215,7 @@ int main()
 		{
 			if (Ks_s.size())
 			{
-				DelKs(Ks_s, n);
+				DelKs(Ks_s, Pipeline_s, n);
 			}
 			else cout << "Ks information has not been received yet. Input the data by selecting 2 or 5 points.\n ";
 			break;
@@ -340,23 +330,28 @@ int main()
 		}
 		case 14:
 		{
-			if (!n.NetworkExist)
-				n.CreateNetwork(Pipeline_s);
-			else cout << "Network has already exist.\n";
+			n.CreateNetwork(Pipeline_s);
 			break;
 		}
 		case 15:
 		{
-			if (n.NetworkExist)
-				n.PrintNetwork();
-			else cout << "The network has not yet been created or the integrity of the network has been compromised.\n";
+			n.SaveNetwork(Pipeline_s, Ks_s);
 			break;
 		}
 		case 16:
 		{
-			if (n.NetworkExist)
-				n.TopolSort();
-			else cout << "The network has not yet been created or the integrity of the network has been compromised.\n";
+			n.LoadNetwork(Pipeline_s, Ks_s);
+			n.CreateNetwork(Pipeline_s);
+			break;
+		}
+		case 17:
+		{
+			n.PrintNetwork();
+			break;
+		}
+		case 18:
+		{
+			n.TopolSort(Pipeline_s);
 			break;
 		}
 		case 0:

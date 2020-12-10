@@ -5,9 +5,9 @@ class Ks
 {
 private:
 	int id;
-	static int MaxId;
 
 public:
+	static int MaxId;
 	std::string name;
 	int ceh;
 	int cehwork;
@@ -22,4 +22,3 @@ public:
 	friend std::ofstream& operator << (std::ofstream& fout, const Ks& k);
 	friend std::ifstream& operator >> (std::ifstream& fin, Ks& k);
 };
-

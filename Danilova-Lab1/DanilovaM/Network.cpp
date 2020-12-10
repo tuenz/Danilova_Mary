@@ -1,25 +1,24 @@
 #include "Network.h"
 #include "Utils.h"
-#include <stack>
-#include <numeric> 
 
 Network::Network()
 {
 	NetworkExist = false;
+	cycle_found = false;
 }
 
-void Network::CreateConnection(unordered_map<int, Pipeline>& Pipeline_s, unordered_map<int, Ks>& Ks_s)
+void Network::CreateConnection(unordered_map<int, Pipeline>& Pipeline_s, const unordered_map<int, Ks>& Ks_s)
 {
 	if ((!Pipeline_s.size()) or (Ks_s.size() < 2))
 		cout << "Not enough objects to create a gts.\n ";
 	else
 	{
-		unordered_map<int, Ks>::iterator IterObj1 = Ks_s.find(GetCorrectNumber(0, INT_MAX,
-			"\n1. Please enter id of the ks from which the pipe exits: "));
-		unordered_map<int, Pipeline>::iterator IterObj2 = Pipeline_s.find(GetCorrectNumber(0, INT_MAX,
-			"\n2. Please enter id of the pipe connecting ks: "));
-		unordered_map<int, Ks>::iterator IterObj3 = Ks_s.find(GetCorrectNumber(0, INT_MAX,
-			"\n3. Please enter id of the ks into which the pipe enters: "));
+		auto IterObj1 = Ks_s.find(GetCorrectNumber(1, Ks::MaxId,
+			"\n1. Please enter correct id of the ks from which the pipe exits: "));
+		auto IterObj2 = Pipeline_s.find(GetCorrectNumber(1, Pipeline::MaxId,
+			"\n2. Please enter correct id of the pipe connecting ks: "));
+		auto IterObj3 = Ks_s.find(GetCorrectNumber(1, Ks::MaxId,
+			"\n3. Please enter correct id of the ks into which the pipe enters: "));
 		if (IterObj1 == Ks_s.end())
 		{
 			cout << "The ks from which the pipe exits not found.\n";
@@ -48,10 +47,19 @@ void Network::CreateConnection(unordered_map<int, Pipeline>& Pipeline_s, unorder
 	}
 }
 
-void Network::CreateNetwork(unordered_map<int, Pipeline>& Pipeline_s)
+void Network::CreateNetwork(const unordered_map<int, Pipeline>& Pipeline_s)
 {
 	int numKs = 0;
 	int numPipes = 0;
+	mGtsKs.clear();
+	mGtsPipe.clear();
+	network.clear();
+	if (!GtsKs.size() && !GtsPipe.size())
+	{
+		cout << "You have not yet selected objects to create a transmission network.\n";
+		return;
+	}
+
 	for (const auto& obj : GtsKs)
 	{
 		mGtsKs.insert(pair<int, int>(numKs, obj));
@@ -59,7 +67,7 @@ void Network::CreateNetwork(unordered_map<int, Pipeline>& Pipeline_s)
 	}
 	for (const auto& obj : GtsPipe)
 	{
-		unordered_map<int, Pipeline>::iterator Iter = Pipeline_s.find(obj);
+		auto Iter = Pipeline_s.find(obj);
 		mGtsPipe.insert(pair<int, Pipeline>(numPipes, Iter->second));
 		numPipes++;
 	}
@@ -90,57 +98,216 @@ void Network::CreateNetwork(unordered_map<int, Pipeline>& Pipeline_s)
 
 void Network::PrintNetwork()
 {
-	cout << "\n ";
-	for (const auto& column : mGtsKs)
-		cout << " " << column.second;
-	for (const auto& line : mGtsKs)
+	if (NetworkExist)
 	{
-		cout << endl << line.second;
+		cout << "\n ";
 		for (const auto& column : mGtsKs)
+			cout << " " << column.second;
+		for (const auto& line : mGtsKs)
 		{
-			cout << " " << network[make_pair(line.first, column.first)];
+			cout << endl << line.second;
+			for (const auto& column : mGtsKs)
+			{
+				cout << " " << network[make_pair(line.first, column.first)];
+			}
 		}
+		cout << "\n\n";
 	}
-	cout << "\n\n";
+	else cout << "The network has not yet been created.\n";
 }
 
-void Network::TopolSort()
+void Network::KsDelChanges(int id, unordered_map <int, Pipeline>& Pipeline_s)
 {
-	map <int, int> prom;
-	int line;
-	int length = (int)mGtsKs.size();
-	map<pair<int, int>, int>  matr;
-
-	for (const auto& line : mGtsKs)
-			for (const auto& column : mGtsKs)
-			matr[make_pair(line.first, column.first)]=network[make_pair(line.first, column.first)];
-	int pos=0;
-	unordered_map <int, int>::iterator it = mGtsKs.end();
-	for (int i = 0; i <= (int)mGtsKs.size()-1; i++)
+	//https://stackoverflow.com/questions/20627458/how-to-remove-elements-from-an-stdset-while-iterating-over-it/20627506#20627506
+	for (auto IterKs = GtsKs.begin(); IterKs != GtsKs.end();)
 	{
-		for (line=0; line<=length; line++)
+		if (*IterKs == id)
 		{
-			pos++;
-			int summ = 0;
-			for (int column = 0; column <= length; column++)
-				summ += matr[make_pair(line, column)];
-			if (summ == 0)
+			GtsKs.erase(IterKs++);
+			for (auto& p : Pipeline_s)
 			{
-				it--;
-				prom.insert(pair<int, int> (pos, (it->second)));
-				for (int stolb = 0; stolb <= length; stolb++)
+				if ((p.second.OutputId == id) || (p.second.InputId == id))
 				{
-				    matr.erase(make_pair(line, stolb));
-					matr.erase(make_pair(stolb, line));
+					p.second.InputId = 0;
+					p.second.OutputId = 0;
+					for (auto IterPipe = GtsPipe.begin(); IterPipe != GtsPipe.end();)
+					{
+						if (*IterPipe == p.second.GetId())
+							GtsPipe.erase(IterPipe++);
+						else
+							IterPipe++;
+
+					}
 				}
-				length--;
+			}
+		}
+		else
+			IterKs++;
+	}
+}
+
+void Network::PipeDelChanges(int id)
+{
+	for (auto IterPipe = GtsPipe.begin(); IterPipe != GtsPipe.end();)
+	{
+		if (*IterPipe == id)
+			GtsPipe.erase(IterPipe++);
+		else
+			IterPipe++;
+	}
+}
+
+void Network::SaveNetwork(const unordered_map<int, Pipeline>& Pipeline_s, const unordered_map<int, Ks>& Ks_s)
+{
+	if (NetworkExist)
+	{
+		ofstream fout;
+		fout.open(AskingForName(), ios::out);
+		if (fout.is_open())
+		{
+			fout << GtsPipe.size() << endl;
+			fout << GtsKs.size() << endl;
+			for (const auto& pipe : GtsPipe)
+				fout << pipe << endl;
+			for (const auto& ks : GtsKs)
+				fout << ks << endl;
+			for (const auto& pipe : GtsPipe)
+			{
+				auto IterPipe = Pipeline_s.find(pipe);
+				fout << IterPipe->second;
+			}
+			for (const auto& ks : GtsKs)
+			{
+				auto IterKs = Ks_s.find(ks);
+				fout << IterKs->second;
+			}
+			fout.close();
+			cout << "Done.\n";
+		}
+		else cout << "An error occured while writing the file.";
+	}
+	else cout << "The network has not yet been created.\n";
+}
+
+void Network::LoadNetwork(unordered_map<int, Pipeline>& Pipeline_s, unordered_map<int, Ks>& Ks_s)
+{
+	ifstream fin;
+	fin.open(AskingForName(), ios::in);
+	if (fin.is_open())
+	{
+		Pipeline_s.erase(Pipeline_s.begin(), Pipeline_s.end());
+		Ks_s.erase(Ks_s.begin(), Ks_s.end());
+		int numKs, numPipes;
+		fin >> numPipes;
+		fin >> numKs;
+		for (int i = 1; i <= numPipes; i++)
+		{
+			int prom;
+			fin >> prom;
+			GtsPipe.emplace(prom);
+		}
+		for (int i = 1; i <= numKs; i++)
+		{
+			int prom;
+			fin >> prom;
+			GtsKs.emplace(prom);
+		}
+		while (numPipes--)
+		{
+			Pipeline p;
+			fin >> p;
+			Pipeline_s.insert(pair<int, Pipeline>(p.GetId(), p));
+		}
+		while (numKs--)
+		{
+			Ks k;
+			fin >> k;
+			Ks_s.insert(pair<int, Ks>(k.GetId(), k));
+		}
+		fin.close();
+		cout << "Done.\n";
+	}
+	else cout << "File with this name does not exist.\n";
+}
+
+void Network::DFS(int start, vector<int>& color, stack <int>& answer_stack)
+{
+	color[start] = 1;
+	for (const auto& ver : mGtsKs)
+	{
+		if (network[make_pair(start, ver.first)] != 0 && (color[ver.first] == 0))
+		{
+			DFS(ver.first, color, answer_stack);
+		}
+		else if (network[make_pair(start, ver.first)] != 0 && ((color[ver.first] == 1) || (color[ver.first] == 2)))
+			cycle_found = true;
+	}
+	color[start] = 2;
+	answer_stack.push(start);
+}
+
+void Network::TopolSort(const unordered_map<int, Pipeline>& Pipeline_s)
+{
+	if (NetworkExist)
+	{
+		stack <int> answer_stack;
+		vector<int> color;
+		unordered_map<int, int> answer;
+		color.clear();
+		answer.clear();
+		color.resize(GtsKs.size());
+		for (const auto& ver : mGtsKs)
+			(color[ver.first] == 0);
+		while (!answer_stack.empty())
+			answer_stack.pop();
+		int koren = -1;
+		for (const auto& line : mGtsKs)
+		{
+			int summa = 0;
+			for (const auto& column : mGtsKs)
+			{
+				summa += network[make_pair(column.first, line.first)];
+			}
+			bool not_isolated = false;
+			for (const auto& p : Pipeline_s)
+			{
+				if ((p.second.OutputId == line.second) || (p.second.InputId == line.second))
+					not_isolated = true;
+			}
+			if ((summa == 0) && (not_isolated == true))
+			{
+				koren = line.first;
 				break;
 			}
 		}
+		if (koren == -1)
+		{
+			cout << "\nTopological sort is impossible. Graph has a cycle.\n";
+			return;
+		}
+		else
+		{
+			DFS(koren, color, answer_stack);
+			if (cycle_found)
+			{
+				cout << "\nTopological sort is impossible. Graph has a cycle.\n";
+				return;
+			}
+			else
+			{
+				int numeric = 1;
+				while (!answer_stack.empty())
+				{
+					auto iter = mGtsKs.find(answer_stack.top());
+					answer.insert(pair<int, int>(numeric, iter->second));
+					answer_stack.pop();
+					numeric++;
+				}
+				cout << "\nTopological sort is:\n";
+				for (const auto& sort : answer)
+					cout << sort.first << " - " << sort.second << endl;
+			}
+		}
 	}
-	cout << "Topological sort:\n";
-	for (auto it = prom.begin(); it != prom.end(); it++)
-		cout << it->second << "<-";
-	cout << endl;
+	else cout << "The network has not yet been created.\n";
 }
-

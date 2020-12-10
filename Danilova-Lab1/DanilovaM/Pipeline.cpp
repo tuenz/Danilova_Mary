@@ -26,7 +26,9 @@ ostream& operator << (ostream& out, const Pipeline& p)
 	cout << "\nId: " << p.id
 		<< "\tLength: " << p.length
 		<< "\tDiameter: " << p.diameter
-		<< "\tRepear: " << (p.repear ? "In repear" : "Not in repear") << endl;
+		<< "\tRepear: " << (p.repear ? "In repear" : "Not in repear")
+		<< "\tInputId: " << p.InputId
+		<< "\tOutputId: " << p.OutputId << endl;
 	return out;
 }
 istream& operator >> (istream& in, Pipeline& p)
@@ -39,12 +41,12 @@ istream& operator >> (istream& in, Pipeline& p)
 
 ofstream& operator<<(ofstream& fout, const Pipeline& p)
 {
-	fout << p.id << endl << p.length << endl << p.diameter << endl << p.repear << endl;
+	fout << p.id << endl << p.length << endl << p.diameter << endl << p.repear << endl << p.InputId << endl << p.OutputId << endl;
 	return fout;
 }
 ifstream& operator>>(std::ifstream& fin, Pipeline& p)
 {
-	fin >> p.id >> p.length >> p.diameter >> p.repear;
+	fin >> p.id >> p.length >> p.diameter >> p.repear >> p.InputId >> p.OutputId;
 	return fin;
 }
 
