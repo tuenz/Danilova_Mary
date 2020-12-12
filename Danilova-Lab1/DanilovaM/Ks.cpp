@@ -54,5 +54,6 @@ ifstream& operator>>(ifstream& fin, Ks& k)
 	fin.ignore(1, '\n');
 	getline(fin, k.name);
 	fin >> k.ceh >> k.cehwork >> k.effective;
+	//Ks::MaxId++;
 	return fin;
 }

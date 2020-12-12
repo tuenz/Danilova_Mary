@@ -12,16 +12,19 @@ public:
 	bool repear;
 	int InputId;
 	int OutputId;
+	int Weight;
 
 	Pipeline();
 	void EditPipeline();
 	int GetId() const;
+	int GetWeight() const;
 
 	friend std::ostream& operator << (std::ostream& out, const Pipeline& p);
 	friend std::istream& operator >> (std::istream& in, Pipeline& p);
 	friend std::ofstream& operator << (std::ofstream& fout, const Pipeline& p);
 	friend std::ifstream& operator >> (std::ifstream& fin, Pipeline& p);
 };
+
 
 
 

@@ -32,6 +32,7 @@ void PrintMenu()
 		<< "16. Load transmission network from file.\n"
 		<< "17. Show graph adjacency table.\n"
 		<< "18. Topological sort of graph.\n"
+		<< "19. Find the shortest way.\n"
 		<< "0. Exit.\n";
 }
 
@@ -186,7 +187,7 @@ int main()
 	Network n;
 	for (; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(0, 18, "Please, select a number from 0 to 12.\n"))
+		switch (GetCorrectNumber(0, 19, "Please, select a number from 0 to 12.\n"))
 		{
 		case 1:
 		{
@@ -352,6 +353,19 @@ int main()
 		case 18:
 		{
 			n.TopolSort(Pipeline_s);
+			break;
+		}
+		case 19:
+		{
+			if (n.NetworkExist)
+			{
+				int start = n.FindVertex();
+				if (start == -1)
+					cout << "The number of the vertex is incorrect.\n";
+				else
+					n.ShortDist(start);
+			}
+			else cout << "The network has not yet been created.\n";
 			break;
 		}
 		case 0:

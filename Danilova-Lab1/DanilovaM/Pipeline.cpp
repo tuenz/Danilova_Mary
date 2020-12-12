@@ -12,6 +12,7 @@ Pipeline::Pipeline()
 	repear = false;
 	InputId = 0;
 	OutputId = 0;
+	Weight = 0;
 }
 void Pipeline::EditPipeline()
 {
@@ -21,6 +22,10 @@ int Pipeline::GetId() const
 {
 	return id;
 }
+int Pipeline::GetWeight() const
+{
+	return (int)length;
+}
 ostream& operator << (ostream& out, const Pipeline& p)
 {
 	cout << "\nId: " << p.id
@@ -28,7 +33,8 @@ ostream& operator << (ostream& out, const Pipeline& p)
 		<< "\tDiameter: " << p.diameter
 		<< "\tRepear: " << (p.repear ? "In repear" : "Not in repear")
 		<< "\tInputId: " << p.InputId
-		<< "\tOutputId: " << p.OutputId << endl;
+		<< "\tOutputId: " << p.OutputId
+		<< "\tWeight: " << p.Weight << endl;
 	return out;
 }
 istream& operator >> (istream& in, Pipeline& p)
@@ -36,17 +42,17 @@ istream& operator >> (istream& in, Pipeline& p)
 	p.length = GetCorrectNumber(0.0, DBL_MAX, "Input length:");
 	p.diameter = GetCorrectNumber(0, INT_MAX, "Input diameter:");
 	p.repear = false;
+	p.Weight = p.GetWeight();
 	return in;
 }
 
 ofstream& operator<<(ofstream& fout, const Pipeline& p)
 {
-	fout << p.id << endl << p.length << endl << p.diameter << endl << p.repear << endl << p.InputId << endl << p.OutputId << endl;
+	fout << p.id << endl << p.length << endl << p.diameter << endl << p.repear << endl << p.InputId << endl << p.OutputId << endl << p.Weight << endl;
 	return fout;
 }
 ifstream& operator>>(std::ifstream& fin, Pipeline& p)
 {
-	fin >> p.id >> p.length >> p.diameter >> p.repear >> p.InputId >> p.OutputId;
+	fin >> p.id >> p.length >> p.diameter >> p.repear >> p.InputId >> p.OutputId >> p.Weight;
 	return fin;
 }
-

@@ -90,7 +90,7 @@ void Network::CreateNetwork(const unordered_map<int, Pipeline>& Pipeline_s)
 				column = matr.first;
 		}
 		network.erase(network.find(make_pair(line, column)));
-		network.emplace(make_pair(line, column), 1);
+		network.emplace(make_pair(line, column), obj.second.Weight);
 	}
 	NetworkExist = true;
 	cout << "Transmission network created.\n";
@@ -102,13 +102,13 @@ void Network::PrintNetwork()
 	{
 		cout << "\n ";
 		for (const auto& column : mGtsKs)
-			cout << " " << column.second;
+			cout << "\t" << column.second;
 		for (const auto& line : mGtsKs)
 		{
 			cout << endl << line.second;
 			for (const auto& column : mGtsKs)
 			{
-				cout << " " << network[make_pair(line.first, column.first)];
+				cout << "\t" << network[make_pair(line.first, column.first)];
 			}
 		}
 		cout << "\n\n";
@@ -239,12 +239,13 @@ void Network::DFS(int start, vector<int>& color, stack <int>& answer_stack)
 		{
 			DFS(ver.first, color, answer_stack);
 		}
-		else if (network[make_pair(start, ver.first)] != 0 && ((color[ver.first] == 1) || (color[ver.first] == 2)))
+		else if (network[make_pair(start, ver.first)] != 0 && (color[ver.first] == 1))
 			cycle_found = true;
 	}
 	color[start] = 2;
 	answer_stack.push(start);
 }
+
 
 void Network::TopolSort(const unordered_map<int, Pipeline>& Pipeline_s)
 {
@@ -282,7 +283,7 @@ void Network::TopolSort(const unordered_map<int, Pipeline>& Pipeline_s)
 		}
 		if (koren == -1)
 		{
-			cout << "\nTopological sort is impossible. Graph has a cycle.\n";
+			cout << "\nTopological sort is impossible. Graph has a cycle. KOREN\n";
 			return;
 		}
 		else
@@ -295,13 +296,13 @@ void Network::TopolSort(const unordered_map<int, Pipeline>& Pipeline_s)
 			}
 			else
 			{
-				int numeric = 1;
+				int i = 1;
 				while (!answer_stack.empty())
 				{
 					auto iter = mGtsKs.find(answer_stack.top());
-					answer.insert(pair<int, int>(numeric, iter->second));
+					answer.insert(pair<int, int>(i, iter->second));
 					answer_stack.pop();
-					numeric++;
+					i++;
 				}
 				cout << "\nTopological sort is:\n";
 				for (const auto& sort : answer)
@@ -310,4 +311,108 @@ void Network::TopolSort(const unordered_map<int, Pipeline>& Pipeline_s)
 		}
 	}
 	else cout << "The network has not yet been created.\n";
+}
+
+void Network::FindWay(int vertex, stack<int>& way, const vector <int>& distance)
+{
+	way.push(vertex);
+	if (distance[vertex] == 0)
+	{
+		return;
+	}
+	else
+		for (int i = 0; i <= GtsKs.size() - 1; i++)
+		{
+			if (distance[vertex] == network[make_pair(i, vertex)])
+			{
+				way.push(i);
+				return;
+			}
+			else if ((distance[vertex] - network[make_pair(i, vertex)] == distance[i]) && i != vertex)
+				FindWay(i, way, distance);
+		}
+}
+
+void Network::ShortDist(int start)
+{
+	vector <int> distance;
+	vector <int> visited;
+	stack <int> way;
+	while (!way.empty())
+		way.pop();
+	distance.reserve(GtsKs.size());
+	visited.reserve(GtsKs.size());
+	for (int i = 0; i <= GtsKs.size() - 1; i++)
+	{
+		distance.push_back(INT_MAX);
+		visited.push_back(0);
+	}
+	int indexstart = 0;
+	for (const auto& m : mGtsKs)
+	{
+		if (m.second == start)
+			indexstart = m.first;
+	}
+	distance[indexstart] = 0;
+	int index = 0;
+	for (int count = 0; count < GtsKs.size() - 1; count++)
+	{
+		int min = INT_MAX;
+		for (int i = 0; i < GtsKs.size(); i++)
+			if (!visited[i] && distance[i] <= min)
+			{
+				min = distance[i];
+				index = i;
+			}
+		visited[index] = 1;
+		for (int i = 0; i < GtsKs.size(); i++)
+			if (!visited[i] && network[make_pair(index, i)] && distance[index] != INT_MAX &&
+				distance[index] + network[make_pair(index, i)] < distance[i])
+				distance[i] = distance[index] + network[make_pair(index, i)];
+	}
+	cout << "\nThe shorterst ways:\n\n";
+	auto iterver = mGtsKs.begin();
+	for (int i = 0; i < GtsKs.size(); i++)
+	{
+		if (distance[i] != INT_MAX)
+		{
+			cout << start << " > " << iterver->second << " = " << distance[i];
+			cout << endl;
+			if (distance[i] != 0)
+			{
+				cout << "Way: ";
+				FindWay(i, way, distance);
+				auto iter = mGtsKs.find(way.top());
+				way.pop();
+				cout << iter->second;
+				while (!way.empty())
+				{
+					iter = mGtsKs.find(way.top());
+					way.pop();
+					cout << "->" << iter->second;
+				}
+				cout << endl;
+			}
+			cout << endl;
+		}
+		else cout << start << " > " << iterver->second << " = " << "there is no way (infinity)" << endl << endl;
+		iterver++;
+	}
+}
+
+int Network::FindVertex()
+{
+	vector <int> vershina;
+	vershina.reserve(GtsKs.size());
+	for (const auto& v : GtsKs)
+		vershina.push_back(v);
+	cout << "\nPlease, enter correct number of the correct number of the vertex to calculate the path from: ";
+	int vertex;
+	cin >> vertex;
+	auto got = find(vershina.begin(), vershina.end(), vertex);
+	if (got == vershina.end())
+	{
+		return -1;
+	}
+	return vertex;
 }
