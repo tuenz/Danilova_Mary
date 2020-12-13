@@ -13,11 +13,13 @@ public:
 	int InputId;
 	int OutputId;
 	int Weight;
+	int Throughput;
 
 	Pipeline();
 	void EditPipeline();
 	int GetId() const;
 	int GetWeight() const;
+	int GetThroughput() const;
 
 	friend std::ostream& operator << (std::ostream& out, const Pipeline& p);
 	friend std::istream& operator >> (std::istream& in, Pipeline& p);

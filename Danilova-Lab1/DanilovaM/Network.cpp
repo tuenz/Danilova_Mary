@@ -1,5 +1,6 @@
 #include "Network.h"
 #include "Utils.h"
+#include <algorithm> 
 
 Network::Network()
 {
@@ -49,16 +50,17 @@ void Network::CreateConnection(unordered_map<int, Pipeline>& Pipeline_s, const u
 
 void Network::CreateNetwork(const unordered_map<int, Pipeline>& Pipeline_s)
 {
-	int numKs = 0;
-	int numPipes = 0;
-	mGtsKs.clear();
-	mGtsPipe.clear();
-	network.clear();
 	if (!GtsKs.size() && !GtsPipe.size())
 	{
 		cout << "You have not yet selected objects to create a transmission network.\n";
 		return;
 	}
+	int numKs = 0;
+	int numPipes = 0;
+	mGtsKs.clear();
+	mGtsPipe.clear();
+	network.clear();
+	throughputs.clear();
 
 	for (const auto& obj : GtsKs)
 	{
@@ -76,6 +78,7 @@ void Network::CreateNetwork(const unordered_map<int, Pipeline>& Pipeline_s)
 		for (const auto& column : mGtsKs)
 		{
 			network.emplace(make_pair(line.first, column.first), 0);
+			throughputs.emplace(make_pair(line.first, column.first), 0);
 		}
 	}
 	for (const auto& obj : mGtsPipe)
@@ -90,28 +93,38 @@ void Network::CreateNetwork(const unordered_map<int, Pipeline>& Pipeline_s)
 				column = matr.first;
 		}
 		network.erase(network.find(make_pair(line, column)));
+	    throughputs.erase(throughputs.find(make_pair(line, column)));
 		network.emplace(make_pair(line, column), obj.second.Weight);
+		throughputs.emplace(make_pair(line, column), obj.second.Throughput);
 	}
 	NetworkExist = true;
-	cout << "Transmission network created.\n";
+	cout << "Transmission network updated.\n";
+}
+
+void Network::PrintTable(map<pair<int, int>, int>& table)
+{
+	cout << "\n ";
+	for (const auto& column : mGtsKs)
+		cout << "\t" << column.second;
+	for (const auto& line : mGtsKs)
+	{
+		cout << endl << line.second;
+		for (const auto& column : mGtsKs)
+		{
+			cout << "\t" << table[make_pair(line.first, column.first)];
+		}
+	}
+	cout << "\n\n";
 }
 
 void Network::PrintNetwork()
 {
 	if (NetworkExist)
 	{
-		cout << "\n ";
-		for (const auto& column : mGtsKs)
-			cout << "\t" << column.second;
-		for (const auto& line : mGtsKs)
-		{
-			cout << endl << line.second;
-			for (const auto& column : mGtsKs)
-			{
-				cout << "\t" << network[make_pair(line.first, column.first)];
-			}
-		}
-		cout << "\n\n";
+		cout << "\nAdjacent table for pipe lengths:\n";
+		PrintTable(network);
+		cout << "\nAdjacent table for pipe throughputs:\n";
+		PrintTable(throughputs);
 	}
 	else cout << "The network has not yet been created.\n";
 }
@@ -246,7 +259,6 @@ void Network::DFS(int start, vector<int>& color, stack <int>& answer_stack)
 	answer_stack.push(start);
 }
 
-
 void Network::TopolSort(const unordered_map<int, Pipeline>& Pipeline_s)
 {
 	if (NetworkExist)
@@ -321,7 +333,7 @@ void Network::FindWay(int vertex, stack<int>& way, const vector <int>& distance)
 		return;
 	}
 	else
-		for (int i = 0; i <= GtsKs.size() - 1; i++)
+		for (int i = 0; i <= (int)GtsKs.size() - 1; i++)
 		{
 			if (distance[vertex] == network[make_pair(i, vertex)])
 			{
@@ -333,86 +345,194 @@ void Network::FindWay(int vertex, stack<int>& way, const vector <int>& distance)
 		}
 }
 
-void Network::ShortDist(int start)
+void Network::ShortDist()
 {
-	vector <int> distance;
-	vector <int> visited;
-	stack <int> way;
-	while (!way.empty())
-		way.pop();
-	distance.reserve(GtsKs.size());
-	visited.reserve(GtsKs.size());
-	for (int i = 0; i <= GtsKs.size() - 1; i++)
+	if (NetworkExist)
 	{
-		distance.push_back(INT_MAX);
-		visited.push_back(0);
-	}
-	int indexstart = 0;
-	for (const auto& m : mGtsKs)
-	{
-		if (m.second == start)
-			indexstart = m.first;
-	}
-	distance[indexstart] = 0;
-	int index = 0;
-	for (int count = 0; count < GtsKs.size() - 1; count++)
-	{
-		int min = INT_MAX;
-		for (int i = 0; i < GtsKs.size(); i++)
-			if (!visited[i] && distance[i] <= min)
-			{
-				min = distance[i];
-				index = i;
-			}
-		visited[index] = 1;
-		for (int i = 0; i < GtsKs.size(); i++)
-			if (!visited[i] && network[make_pair(index, i)] && distance[index] != INT_MAX &&
-				distance[index] + network[make_pair(index, i)] < distance[i])
-				distance[i] = distance[index] + network[make_pair(index, i)];
-	}
-	cout << "\nThe shorterst ways:\n\n";
-	auto iterver = mGtsKs.begin();
-	for (int i = 0; i < GtsKs.size(); i++)
-	{
-		if (distance[i] != INT_MAX)
+		int start = FindVertex("\nPlease, enter correct number of the vertex to calculate the path from: ");
+		int end = FindVertex("\nPlease, enter correct number of the vertex to calculate the path to: ");
+		if ((start == -1) || (end == -1))
 		{
-			cout << start << " > " << iterver->second << " = " << distance[i];
-			cout << endl;
-			if (distance[i] != 0)
-			{
-				cout << "Way: ";
-				FindWay(i, way, distance);
-				auto iter = mGtsKs.find(way.top());
+			cout << "The number of the vertex is incorrect.\n";
+			return;
+		}
+		else
+		{
+			vector <int> distance;
+			vector <int> visited;
+			stack <int> way;
+			while (!way.empty())
 				way.pop();
-				cout << iter->second;
-				while (!way.empty())
+			distance.reserve(GtsKs.size());
+			visited.reserve(GtsKs.size());
+			for (int i = 0; i <= (int)GtsKs.size() - 1; i++)
+			{
+				distance.push_back(INT_MAX);
+				visited.push_back(0);
+			}
+			int indexstart = 0;
+			int indexend = 0;
+			for (const auto& m : mGtsKs)
+			{
+				if (m.second == start)
+					indexstart = m.first;
+				if (m.second == end)
+					indexend = m.first;
+			}
+			distance[indexstart] = 0;
+			int index = 0;
+			for (int count = 0; count < (int)GtsKs.size() - 1; count++)
+			{
+				int min = INT_MAX;
+				for (int i = 0; i < (int)GtsKs.size(); i++)
+					if (!visited[i] && distance[i] <= min)
+					{
+						min = distance[i];
+						index = i;
+					}
+				visited[index] = 1;
+				for (int i = 0; i < (int)GtsKs.size(); i++)
+					if (!visited[i] && network[make_pair(index, i)] && distance[index] != INT_MAX &&
+						distance[index] + network[make_pair(index, i)] < distance[i])
+						distance[i] = distance[index] + network[make_pair(index, i)];
+			}
+			cout << "\nThe shorterst way:\n\n";
+			if (distance[indexend] != INT_MAX)
+			{
+				cout << start << " > " << end << " = " << distance[indexend];
+				cout << endl;
+				if (distance[indexend] != 0)
 				{
-					iter = mGtsKs.find(way.top());
+					cout << "Way: ";
+					FindWay(indexend, way, distance);
+					auto iter = mGtsKs.find(way.top());
 					way.pop();
-					cout << "->" << iter->second;
+					cout << iter->second;
+					while (!way.empty())
+					{
+						iter = mGtsKs.find(way.top());
+						way.pop();
+						cout << "->" << iter->second;
+					}
+					cout << endl;
 				}
 				cout << endl;
 			}
-			cout << endl;
+			else cout << start << " > " << end << " = " << "there is no way (infinity)" << endl << endl;
 		}
-		else cout << start << " > " << iterver->second << " = " << "there is no way (infinity)" << endl << endl;
-		iterver++;
 	}
+	else cout << "The network has not yet been created.\n";
 }
 
-int Network::FindVertex()
+int Network::FindVertex(string str)
 {
 	vector <int> vershina;
 	vershina.reserve(GtsKs.size());
 	for (const auto& v : GtsKs)
 		vershina.push_back(v);
-	cout << "\nPlease, enter correct number of the correct number of the vertex to calculate the path from: ";
-	int vertex;
-	cin >> vertex;
+	int vertex = GetCorrectNumber(1, Ks::MaxId, str);
 	auto got = find(vershina.begin(), vershina.end(), vertex);
 	if (got == vershina.end())
 	{
 		return -1;
 	}
 	return vertex;
+}
+
+int Network::BFS(int stvertex, int endvertex, vector <int>& way, map <pair<int, int>, int>& flow)
+{
+	vector<int> color;
+	color.clear();
+	color.resize(GtsKs.size());
+	for (int i = 0; i <= (int)GtsKs.size() - 1; i++)
+		color[i]=0;
+	queue<int> q;
+	q.push(stvertex);     
+	color[stvertex] = 1;
+	way[stvertex]=-1;
+	while (!q.empty())
+	{
+		int prom = q.front();
+		color[prom] = 2;
+		q.pop();
+		for (int vershina = 0; vershina <= (int)GtsKs.size() - 1; vershina++)
+		{
+			if (color[vershina] == 0 && (throughputs[make_pair(prom, vershina)] - flow[make_pair(prom, vershina)]) > 0)
+			{
+				q.push(vershina);
+				color[vershina] = 1;
+				way[vershina] = prom;		
+			}
+		}
+	}
+	if (color[endvertex] == 2)
+		return 0;
+	else 
+		return 1;
+}
+
+void Network::MaxFlow()
+{
+	if (NetworkExist)
+	{
+		int source = FindVertex("\nPlease, enter correct number of the vertex to calculate the flow from (source): ");
+		int stock = FindVertex("\nPlease, enter correct number of the vertex to calculate the flow to(stock): ");
+		if ((source == -1) || (stock == -1))
+			cout << "The number of the vertex is incorrect.\n";
+		else
+		{
+			int maxflow = 0;
+			vector <int> way;
+			way.clear();
+			way.resize(GtsKs.size());
+			map <pair<int, int>, int> flow;
+			for (const auto& line : mGtsKs)
+			{
+				for (const auto& column : mGtsKs)
+				{
+					flow.emplace(make_pair(line.first, column.first), 0);
+				}
+			}
+			int indexsource = 0;
+			int indexstock = 0;
+			for (const auto& m : mGtsKs)
+			{
+				if (m.second == source)
+					indexsource = m.first;
+				if (m.second == stock)
+					indexstock = m.first;
+			}
+			while (!BFS(indexsource, indexstock, way, flow))
+			{
+				int lyambda = INT_MAX;
+				int vershina = indexstock;
+				while (way[vershina] != -1)
+				{
+					lyambda = min(lyambda, throughputs[make_pair(way[vershina], vershina)] - flow[make_pair(way[vershina], vershina)]);
+					vershina = way[vershina];
+				}
+				vershina = indexstock;
+				while (way[vershina] != -1)
+				{
+					flow[make_pair(vershina, way[vershina])] -= lyambda;
+					flow[make_pair(way[vershina], vershina)] += lyambda;
+					vershina = way[vershina];
+				}
+				maxflow += lyambda;
+			}
+			//cout << "\nParticipating vertices:\n";
+			//for (const auto& line : mGtsKs)
+			//{
+			//	for (const auto& column : mGtsKs)
+			//	{
+			//		if (throughputs[make_pair(line.first, column.first)] == flow[make_pair(line.first, column.first)] && throughputs[make_pair(line.first, column.first)] != 0)
+			//		{
+			//			cout << line.second << "->" << column.second << endl;
+			//		}
+			//	}
+			//}
+			cout << "\nThe maximum flow between " << source << " and " << stock << " is: " << maxflow << endl;
+		}
+	}
+	else cout << "The network has not yet been created.\n";
 }

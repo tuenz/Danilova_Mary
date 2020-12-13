@@ -33,6 +33,7 @@ void PrintMenu()
 		<< "17. Show graph adjacency table.\n"
 		<< "18. Topological sort of graph.\n"
 		<< "19. Find the shortest way.\n"
+		<< "20. Find the maximum flow.\n"
 		<< "0. Exit.\n";
 }
 
@@ -134,8 +135,11 @@ void BatchEditPipes(unordered_map<int, Pipeline>& Pipeline_s, Network& n)
 		else
 		{
 			got->second.EditPipeline();
+			got->second.InputId = 0;
+			got->second.OutputId = 0;
 			cout << "Done.\n";
 			n.PipeDelChanges(choice);
+			n.CreateNetwork(Pipeline_s);
 		}
 	}
 }
@@ -145,6 +149,8 @@ void EditAllPipes(unordered_map <int, Pipeline>& Pipeline_s, Network& n)
 	for (auto& p : Pipeline_s)
 	{
 		p.second.EditPipeline();
+		p.second.InputId = 0;
+		p.second.OutputId = 0;
 	}
 	cout << "Done.\n";
 	n.GtsPipe.clear();
@@ -160,6 +166,7 @@ void DelPipe(unordered_map<int, Pipeline>& Pipeline_s, Network& n)
 	else
 	{
 		n.PipeDelChanges(IdDel);
+		n.CreateNetwork(Pipeline_s);
 		Pipeline_s.erase(IdToDelete->first);
 		cout << "Done.\n";
 	}
@@ -175,6 +182,7 @@ void DelKs(unordered_map<int, Ks>& Ks_s, unordered_map <int, Pipeline>& Pipeline
 	else
 	{
 		n.KsDelChanges(IdDel, Pipeline_s);
+		n.CreateNetwork(Pipeline_s);
 		Ks_s.erase(IdToDelete->first);
 		cout << "Done.\n";
 	}
@@ -187,7 +195,7 @@ int main()
 	Network n;
 	for (; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(0, 19, "Please, select a number from 0 to 12.\n"))
+		switch (GetCorrectNumber(0, 20, "Please, select a number from 0 to 12.\n"))
 		{
 		case 1:
 		{
@@ -357,15 +365,12 @@ int main()
 		}
 		case 19:
 		{
-			if (n.NetworkExist)
-			{
-				int start = n.FindVertex();
-				if (start == -1)
-					cout << "The number of the vertex is incorrect.\n";
-				else
-					n.ShortDist(start);
-			}
-			else cout << "The network has not yet been created.\n";
+			n.ShortDist();
+			break;
+		}		
+		case 20:
+		{
+			n.MaxFlow();
 			break;
 		}
 		case 0:
