@@ -195,7 +195,7 @@ int main()
 	Network n;
 	for (; ; ) {
 		PrintMenu();
-		switch (GetCorrectNumber(0, 20, "Please, select a number from 0 to 12.\n"))
+		switch (GetCorrectNumber(0, 20, "Please, select a number from 0 to 20.\n"))
 		{
 		case 1:
 		{

@@ -472,12 +472,13 @@ int Network::BFS(int stvertex, int endvertex, vector <int>& way, map <pair<int, 
 }
 
 void Network::MaxFlow()
-{
+{ 
+	//алгоритм форда-фалкерсона
 	if (NetworkExist)
 	{
 		int source = FindVertex("\nPlease, enter correct number of the vertex to calculate the flow from (source): ");
 		int stock = FindVertex("\nPlease, enter correct number of the vertex to calculate the flow to(stock): ");
-		if ((source == -1) || (stock == -1))
+		if ((source == -1) || (stock == -1) || (stock ==source))
 			cout << "The number of the vertex is incorrect.\n";
 		else
 		{
